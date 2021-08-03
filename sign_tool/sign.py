@@ -21,7 +21,7 @@ if pid == 0:
 print(pid)
 
 session = device.attach(pid)
-with open('../index.js') as f:
+with open('agent.js') as f:
     script = session.create_script(f.read())
 
 instances = set()
@@ -71,19 +71,18 @@ def on_ready(s):
         print('待签名串：Operation-Type=' + operation_type + '&Request-Data=' + request_data + '&Ts=' + ts)
         print('签名是：', alipay_sign(s, operation_type, request_data, ts))
 
-max_instances = 12
 def on_message(message, payload):
     # print(message)
     # print(payload.decode('utf-8'))
     if message['type'] != 'send':
         return
 
-    if (message['payload'] == max_instances):
+    if message['payload'] == 1:
         _thread.start_new_thread(on_ready, (script,))
 
 script.on('message', on_message)
 script.load()
-print('请随意点击几羊界面以产生 HTTP 请求，本代码需要收集签名函数动态地址...')
+print('请随意点击几羊界面以产生 HTTPS 请求，本代码需要收集签名函数动态地址...')
 
 # input() # 等待输入
 while 1:

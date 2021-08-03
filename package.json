@@ -5,16 +5,10 @@
   "private": false,
   "scripts": {
     "build": "node loader.js",
-	"run": "python loader.py"
+    "run": "python loader.py"
   },
-  "devDependencies": {
-    "frida": "^15.0.9",
-    "koa": "^2.13.1",
-    "koa-request": "^1.0.0",
-    "koa-router": "^10.0.0",
-    "koa2-request": "^1.0.4"
-  },
+  "devDependencies": {},
   "dependencies": {
-    "webpack": "^5.47.0"
+    "frida": "^15.0.13"
   }
 }

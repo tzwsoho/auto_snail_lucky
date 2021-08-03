@@ -11,8 +11,6 @@ var AndroidContext;
 var logMpaasPropertiesUtil;
 
 var DeviceUtil;
-var LauncherApplicationAgent;
-var ApplicationContext;
 
 var SdkVersionUtil;
 
@@ -23,10 +21,6 @@ var DeviceInfo;
 var securesignature;
 
 function findInstanceHook() {
-	if (GwCookieCacheHelper || RpcHelper || securesignature) {
-		return;
-	}
-
 	if (!Java.available) {
 		console.error('Java API not available');
 		return;
@@ -37,95 +31,51 @@ function findInstanceHook() {
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		var SSL_read, SSL_write;
-		const apiResolver = new ApiResolver('module');
-		apiResolver.enumerateMatches('exports:*libssl*!SSL_*').forEach(function (v) {
-			if (v.name.indexOf('SSL_read') > 0) {
-				SSL_read = v.address;
-			} else if (v.name.indexOf('SSL_write') > 0) {
-				SSL_write = v.address;
-			}
-		});
-
-		if (SSL_read) {
-			Interceptor.attach(SSL_read, {
-				onEnter: function (args) {
-					this.buf = ptr(args[1]);
-				},
-				onLeave: function (retval) {
-					retval = retval.toInt32();
-					if (retval > 0) {
-						// console.log('SSL_read\n', this.buf.readByteArray(retval), '\n', '*'.repeat(120));
-
-						send(100, this.buf.readByteArray(retval));
-						// send(100, Memory.readByteArray(this.buf, retval));
-					}
-				}
-			});
-		}
-
-		if (SSL_write) {
-			Interceptor.attach(SSL_write, {
-				onEnter: function (args) {
-					const len = args[2].toInt32();
-					if (len > 0) {
-						// console.log('SSL_write\n', ptr(args[1]).readByteArray(len), '\n', '*'.repeat(120));
-
-						send(101, ptr(args[1]).readByteArray(len));
-						// send(101, Memory.readByteArray(ptr(args[1]), len));
-					}
-				},
-				onLeave: function (retval) {
-				}
-			});
-		}
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		Java.use('com.alipay.mobile.common.transport.http.GwCookieCacheHelper').getCookie.implementation = function (p0) {
-			const ret = this.getCookie(p0);
-			if (GwCookieCacheHelper) {
-				return ret;
-			}
-
-			GwCookieCacheHelper = Java.retain(this);
+		if (!GwCookieCacheHelper) {
+			GwCookieCacheHelper = Java.use('com.alipay.mobile.common.transport.http.GwCookieCacheHelper');
 			send(1); // notify python script
-			return ret;
-		};
+		}
 
-		Java.use('com.snail.android.lucky.base.api.rpc.utils.RpcHelper').getRpcBaseInfo.implementation = function () {
-			const ret = this.getRpcBaseInfo();
-			if (RpcHelper) {
-				return ret;
-			}
-
-			RpcHelper = Java.retain(this);
+		if (!RpcHelper) {
+			RpcHelper = Java.use('com.snail.android.lucky.base.api.rpc.utils.RpcHelper');
 			send(2); // notify python script
-			return ret;
-		};
+		}
 
-		Java.use('com.alipay.mobile.common.netsdkextdependapi.deviceinfo.DeviceInfoUtil').getDeviceId.implementation = function () {
-			const ret = this.getDeviceId();
-			if (DeviceInfoUtil) {
-				return ret;
-			}
-
-			DeviceInfoUtil = Java.retain(this);
+		if (!DeviceInfoUtil) {
+			DeviceInfoUtil = Java.use('com.alipay.mobile.common.netsdkextdependapi.deviceinfo.DeviceInfoUtil');
 			send(3); // notify python script
-			return ret;
-		};
+		}
 
 		if (!transMpaasPropertiesUtil) {
 			transMpaasPropertiesUtil = Java.use('com.alipay.mobile.common.transport.utils.MpaasPropertiesUtil');
 			send(4); // notify python script
 			// console.log(transMpaasPropertiesUtil.getAppId.overload('android.content.Context'));
-			// console.log(transMpaasPropertiesUtil.getAppKeyFromMetaData);
 		}
 
 		if (!logMpaasPropertiesUtil) {
 			logMpaasPropertiesUtil = Java.use('com.alipay.mobile.common.logging.util.MpaasPropertiesUtil');
 			send(5); // notify python script
-			// console.log(logMpaasPropertiesUtil.getWorkSpaceId);
+		}
+
+		if (!DeviceUtil) {
+			DeviceUtil = Java.use('com.snail.android.lucky.base.api.utils.DeviceUtil');
+			send(6); // notify python script
+		}
+
+		if (!SdkVersionUtil) {
+			SdkVersionUtil = Java.use('com.alipay.mobile.common.logging.api.utils.SdkVersionUtil');
+			send(7); // notify python script
+		}
+
+		if (!LogContext) {
+			const LoggerFactory = Java.use('com.alipay.mobile.common.logging.api.LoggerFactory');
+			LogContext = LoggerFactory.getLogContext.call(LoggerFactory);
+			send(8); // notify python script
+		}
+
+		if (!DeviceInfo) {
+			DeviceInfo = Java.use('com.alipay.mobile.common.info.DeviceInfo');
+			send(9); // notify python script
 		}
 
 		Java.use('com.alipay.mobile.common.rpc.transport.http.HttpCaller').$init.implementation = function (p0, p1, p2, p3, p4, p5, p6, p7) {
@@ -135,44 +85,9 @@ function findInstanceHook() {
 			}
 
 			AndroidContext = Java.retain(p6);
-			send(6); // notify python script
+			send(10); // notify python script
 			return ret;
 		};
-
-		if (!DeviceUtil) {
-			DeviceUtil = Java.use('com.snail.android.lucky.base.api.utils.DeviceUtil');
-			send(7); // notify python script
-		}
-
-		if (!LauncherApplicationAgent) {
-			LauncherApplicationAgent = Java.use('com.alipay.mobile.framework.LauncherApplicationAgent');
-			LauncherApplicationAgent.getInstance.implementation = function () {
-				const ret = this.getInstance.call(LauncherApplicationAgent);
-				if (ApplicationContext) {
-					return ret;
-				}
-
-				ApplicationContext = Java.retain(ret.getApplicationContext());
-				send(8); // notify python script
-				return ret;
-			}
-		}
-
-		if (!SdkVersionUtil) {
-			SdkVersionUtil = Java.use('com.alipay.mobile.common.logging.api.utils.SdkVersionUtil');
-			send(9); // notify python script
-		}
-
-		if (!LogContext) {
-			const LoggerFactory = Java.use('com.alipay.mobile.common.logging.api.LoggerFactory');
-			LogContext = LoggerFactory.getLogContext.call(LoggerFactory);
-			send(10); // notify python script
-		}
-
-		if (!DeviceInfo) {
-			DeviceInfo = Java.use('com.alipay.mobile.common.info.DeviceInfo');
-			send(11); // notify python script
-		}
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -189,7 +104,7 @@ function findInstanceHook() {
 							}
 
 							securesignature = Java.retain(this);
-							send(12); // notify python script
+							send(11); // notify python script
 							return ret;
 						}
 					}
@@ -205,30 +120,30 @@ function findInstanceHook() {
 }
 
 function getCookie() {
-	if (!GwCookieCacheHelper || !GwCookieCacheHelper.getCookie) {
+	if (!GwCookieCacheHelper) {
 		console.error('GwCookieCacheHelper instance not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return GwCookieCacheHelper.getCookie('.shulidata.com').toString();
+	return GwCookieCacheHelper.getCookie.call(GwCookieCacheHelper, '.shulidata.com').toString();
 }
 
 function getRpcBaseInfo() {
-	if (!RpcHelper || !RpcHelper.getRpcBaseInfo) {
+	if (!RpcHelper) {
 		console.error('RpcHelper instance not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return RpcHelper.getRpcBaseInfo().toString();
+	return RpcHelper.getRpcBaseInfo.call(RpcHelper).toString();
 }
 
 function getDeviceId() {
-	if (!DeviceInfoUtil || !DeviceInfoUtil.getDeviceId) {
+	if (!DeviceInfoUtil) {
 		console.error('DeviceInfoUtil instance not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return DeviceInfoUtil.getDeviceId().toString();
+	return DeviceInfoUtil.getDeviceId.call(DeviceInfoUtil).toString();
 }
 
 function getAppId() {
@@ -268,21 +183,30 @@ function getVersion() {
 }
 
 function getImei() {
-	if (!ApplicationContext || !DeviceUtil) {
-		console.error('ApplicationContext/DeviceUtil not found, please restart JiYang and click homepage first!');
+	if (!AndroidContext || !DeviceUtil) {
+		console.error('AndroidContext/DeviceUtil not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return DeviceUtil.getImei.call(DeviceUtil, ApplicationContext).toString();
+	return DeviceUtil.getImei.call(DeviceUtil, AndroidContext).toString();
 }
 
 function getCheckAndroidId() {
-	if (!ApplicationContext || !DeviceUtil) {
-		console.error('ApplicationContext/DeviceUtil not found, please restart JiYang and click homepage first!');
+	if (!AndroidContext || !DeviceUtil) {
+		console.error('AndroidContext/DeviceUtil not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return DeviceUtil.getCheckAndroidID.call(DeviceUtil, ApplicationContext).toString();
+	return DeviceUtil.getCheckAndroidID.call(DeviceUtil, AndroidContext).toString();
+}
+
+function getAppVersion() {
+	if (!DeviceUtil) {
+		console.error('DeviceUtil not found, please restart JiYang and click homepage first!');
+		return '';
+	}
+
+	return DeviceUtil.getAppVersion.call(DeviceUtil).toString();
 }
 
 function getChannelId() {
@@ -295,12 +219,12 @@ function getChannelId() {
 }
 
 function getMac() {
-	if (!ApplicationContext || !DeviceInfo) {
-		console.error('ApplicationContext/DeviceInfo not found, please restart JiYang and click homepage first!');
+	if (!AndroidContext || !DeviceInfo) {
+		console.error('AndroidContext/DeviceInfo not found, please restart JiYang and click homepage first!');
 		return '';
 	}
 
-	return DeviceInfo.createInstance.call(DeviceInfo, ApplicationContext).getMacAddress().toString();
+	return DeviceInfo.createInstance.call(DeviceInfo, AndroidContext).getMacAddress().toString();
 }
 
 // function stringifyMap(m) {
@@ -376,6 +300,7 @@ rpc.exports = {
 	getVersion,
 	getImei,
 	getCheckAndroidId,
+	getAppVersion,
 	getChannelId,
 	getMac,
 	getWorkspaceId,

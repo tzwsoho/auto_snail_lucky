@@ -21,7 +21,7 @@ if pid == 0:
 print(pid)
 
 session = device.attach(pid)
-with open('index.js') as f:
+with open('../index.js') as f:
     script = session.create_script(f.read())
 
 instances = set()

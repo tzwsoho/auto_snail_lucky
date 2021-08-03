@@ -35,6 +35,53 @@ function findInstanceHook() {
 	Java.perform(function () {
 		console.log('hooked');
 
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		var SSL_read, SSL_write;
+		const apiResolver = new ApiResolver('module');
+		apiResolver.enumerateMatches('exports:*libssl*!SSL_*').forEach(function (v) {
+			if (v.name.indexOf('SSL_read') > 0) {
+				SSL_read = v.address;
+			} else if (v.name.indexOf('SSL_write') > 0) {
+				SSL_write = v.address;
+			}
+		});
+
+		if (SSL_read) {
+			Interceptor.attach(SSL_read, {
+				onEnter: function (args) {
+					this.buf = ptr(args[1]);
+				},
+				onLeave: function (retval) {
+					retval = retval.toInt32();
+					if (retval > 0) {
+						// console.log('SSL_read\n', this.buf.readByteArray(retval), '\n', '*'.repeat(120));
+
+						send(100, this.buf.readByteArray(retval));
+						// send(100, Memory.readByteArray(this.buf, retval));
+					}
+				}
+			});
+		}
+
+		if (SSL_write) {
+			Interceptor.attach(SSL_write, {
+				onEnter: function (args) {
+					const len = args[2].toInt32();
+					if (len > 0) {
+						// console.log('SSL_write\n', ptr(args[1]).readByteArray(len), '\n', '*'.repeat(120));
+
+						send(101, ptr(args[1]).readByteArray(len));
+						// send(101, Memory.readByteArray(ptr(args[1]), len));
+					}
+				},
+				onLeave: function (retval) {
+				}
+			});
+		}
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		Java.use('com.alipay.mobile.common.transport.http.GwCookieCacheHelper').getCookie.implementation = function (p0) {
 			const ret = this.getCookie(p0);
 			if (GwCookieCacheHelper) {
@@ -126,6 +173,8 @@ function findInstanceHook() {
 			DeviceInfo = Java.use('com.alipay.mobile.common.info.DeviceInfo');
 			send(11); // notify python script
 		}
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		Java.enumerateClassLoaders({
 			onMatch: function (loader) {

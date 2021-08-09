@@ -63,6 +63,6 @@ python loader.py
 
 # 如果有大老爷使用本脚本抽中大奖，或是想支持本脚本的持续开发，欢迎给本人打赏支持！！！
 
-![alipay.png](./img/alipay.jpg)
+![alipay.jpg](./img/alipay.jpg)
 
-![wechat.png](./img/wechat.jpg)
+![wechat.jpg](./img/wechat.jpg)

@@ -674,7 +674,7 @@ def alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, activity_id, activity
 
 # [{"activityId":"2021080400815764900","activityType":"THOUSAND","apdid":"eYOIkqXXI47JWb8cn6D0oxaU6hpIwTEZaRVOVsJYT4PVrbuCEep0RQBG","clientKey":"IBdxM1u3SL","clientVersion":"3.4.0.69","itemId":"cyb2021031800002214200","itemType":"ONE_SEE_GOODS","model":"NX563J","platform":"Android","token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 组团抽奖活动抽奖
-# 抽奖信息在 alipay_mobile_aggrbillinfo_duplicate_tab 函数返回的 indexItemVoList 字段下面
+# 抽奖信息在 alipay_mobile_aggrbillinfo_duplicate_tab 函数返回的 indexItemVoList 字段下面：
 '''
 {
 	"indexItemVoList": [
@@ -699,6 +699,7 @@ def alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, activity_id, activity
 		},
         ...
 '''
+# {"idem":false,"lotteryCode":"3954209","lotteryRecordId":"2021080404226142070","lotteryStatus":"GROUP_UP_ING","success":true}
 def alipay_mobile_aggrbillinfo_duplicate_lottery(s, activity_id, activity_type, item_id, item_type):
     operation_type = 'alipay.mobile.aggrbillinfo.duplicate.lottery'
     base_info = json.loads(s.exports.get_rpc_base_info())
@@ -860,6 +861,91 @@ def open_box(s, box_id):
             if 'win' in box and box['win'] == True:
                 print('抽得卡片：' + box['cardDesc'])
                 break
+
+def collect_lottery_items_info(s, cate_confs):
+    # 收集分类参数
+    titles = list()
+    param_strs = list()
+    print('开始收集商品分类信息...')
+    for cate in cate_confs:
+        if 'indexTabConfVos' in cate:
+            for tab in cate['indexTabConfVos']:
+                if 'title' in tab and 'paramStr' in tab:
+                    titles.append(tab['title'])
+                    param_strs.append(tab['paramStr'])
+
+    # 收集商品信息
+    items = dict()
+    print('开始收集商品信息...')
+    for i in range(0, len(param_strs)):
+        page_size = 20 # 每次获取 20 个商品
+        max_pages = 1 # 每个分类获取 10 页数据
+        min_price = 9999999.00 # 抽奖商品最低价格
+
+        for page in range(1, max_pages + 1):
+            print('正在获取分类', titles[i], '下第', page, '/', max_pages, '页商品信息，已获取到', len(items), '件商品信息...')
+
+            # TODO 暂时不知道 remainTime 参数的用途
+            # mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], 0)
+            mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], random.randint(0, 300))
+            if mall_list is None:
+                break
+
+            if ('propsGiftBox' in mall_list
+                and 'status' in mall_list['propsGiftBox']
+                and 'giftBoxId' in mall_list['propsGiftBox']
+                and mall_list['propsGiftBox']['status'] == 'WAIT_OPEN'): # 可以开宝箱
+                open_box(s, mall_list['propsGiftBox']['giftBoxId'])
+
+            if 'itemVoList' in mall_list:
+                for item in mall_list['itemVoList']:
+                    if ('title' in item
+                        and 'activityId' in item
+                        and 'itemId' in item
+                        and 'itemType' in item
+                        and 'status' in item
+                        and 'salePrice' in item
+                        and 'participateCount' in item
+                        and item['status'] == 'INIT'):
+                        sale_price = float(item['salePrice'])
+                        items[item['itemId']] = {
+                            'title': item['title'],
+                            'activityId': item['activityId'],
+                            'itemId': item['itemId'],
+                            'itemType': item['itemType'],
+                            'salePrice': sale_price,
+                            'participateCount': item['participateCount']
+                        }
+
+                        if min_price > sale_price:
+                            min_price = sale_price
+
+    # 对商品排序
+    def cmp_item(x, y):
+        # 按价格顺序
+        if x['salePrice'] < y['salePrice']:
+            return -1
+
+        if x['salePrice'] > y['salePrice']:
+            return 1
+
+        # 价格一样，按参与人数倒序
+        if x['participateCount'] < y['participateCount']:
+            return 1
+
+        if x['participateCount'] > y['participateCount']:
+            return -1
+
+        return 0
+
+    # 对商品列表排序
+    item_list = list()
+    for _, v in items.items():
+        item_list.append(v)
+    item_list.sort(key = functools.cmp_to_key(cmp_item))
+    print('已获取到共计', len(item_list), '件商品信息，商品最低价格为：', min_price, '现在开始自动抽奖...')
+
+    return item_list, min_price
 
 def on_ready(s):
     while True:
@@ -1034,81 +1120,6 @@ def on_ready(s):
 
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:
-            # 收集分类参数
-            titles = list()
-            param_strs = list()
-            print('开始收集商品分类信息...')
-            for cate in sign_list['cateConfs']:
-                if 'indexTabConfVos' in cate:
-                    for tab in cate['indexTabConfVos']:
-                        if 'title' in tab and 'paramStr' in tab:
-                            titles.append(tab['title'])
-                            param_strs.append(tab['paramStr'])
-
-            # 收集商品信息
-            items = dict()
-            print('开始收集商品信息...')
-            for i in range(0, len(param_strs)):
-                page_size = 20 # 每次获取 20 个商品
-                max_pages = 5 # 每个分类获取 10 页数据
-                min_price = 9999999.00 # 抽奖商品最低价格
-
-                for page in range(1, max_pages + 1):
-                    print('正在获取分类', titles[i], '下第', page, '/', max_pages, '页商品信息，已获取到', len(items), '件商品信息...')
-
-                    # TODO 暂时不知道 remainTime 参数的用途
-                    # mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], 0)
-                    mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], random.randint(0, 300))
-                    if mall_list is None:
-                        break
-
-                    if ('propsGiftBox' in mall_list
-                        and 'status' in mall_list['propsGiftBox']
-                        and 'giftBoxId' in mall_list['propsGiftBox']
-                        and mall_list['propsGiftBox']['status'] == 'WAIT_OPEN'): # 可以开宝箱
-                        open_box(s, mall_list['propsGiftBox']['giftBoxId'])
-
-                    if 'itemVoList' in mall_list:
-                        for item in mall_list['itemVoList']:
-                            if ('title' in item
-                                and 'activityId' in item
-                                and 'itemId' in item
-                                and 'itemType' in item
-                                and 'status' in item
-                                and 'salePrice' in item
-                                and 'participateCount' in item
-                                and item['status'] == 'INIT'):
-                                sale_price = float(item['salePrice'])
-                                items[item['itemId']] = {
-                                    'title': item['title'],
-                                    'activityId': item['activityId'],
-                                    'itemId': item['itemId'],
-                                    'itemType': item['itemType'],
-                                    'salePrice': sale_price,
-                                    'participateCount': item['participateCount']
-                                }
-
-                                if min_price > sale_price:
-                                    min_price = sale_price
-
-            # 对商品排序
-            def cmp_item(x, y):
-                # 按价格顺序
-                if x['salePrice'] < y['salePrice']:
-                    return -1
-
-                if x['salePrice'] > y['salePrice']:
-                    return 1
-
-                # 价格一样，按参与人数倒序
-                if x['participateCount'] < y['participateCount']:
-                    return 1
-
-                if x['participateCount'] > y['participateCount']:
-                    return -1
-
-                return 0
-
             # 根据抽奖限额搜索商品信息
             def binary_search(lst, quota):
                 if len(lst) == 0:
@@ -1120,19 +1131,17 @@ def on_ready(s):
                     mid = left + (right - left) // 2
                     if lst[mid]['salePrice'] == quota:
                         break
-                    elif lst[mid]['salePrice'] > quota:
+                    elif lst[mid]['salePrice'] > quota: # 在左边搜索
                         right = mid - 1
-                    elif lst[mid]['salePrice'] < quota:
+                    elif lst[mid]['salePrice'] < quota: # 在右边搜索
                         left = mid + 1
 
-                return lst[mid]
+                if lst[mid]['salePrice'] > quota and mid > 0:
+                    return lst[mid - 1]
+                else:
+                    return lst[mid]
 
-            # 对商品列表排序
-            item_list = list()
-            for _, v in items.items():
-                item_list.append(v)
-            item_list.sort(key = functools.cmp_to_key(cmp_item))
-            print('已获取到共计', len(item_list), '件商品信息，商品最低价格为：', min_price, '现在开始自动抽奖...')
+            item_list, min_price = collect_lottery_items_info(s, sign_list['cateConfs'])
 
             # 开始抽奖
             while True:
@@ -1148,10 +1157,11 @@ def on_ready(s):
                     available_wool = float(sheep_info['availableWool']) # 目前可以收取的羊毛数
 
                     print('当前可用来抽奖的羊毛：', available_quota, '可收取羊毛：', available_wool, '可抽奖商品限额：', limit_quota)
-                    if available_quota + available_wool < min_price:
-                        print('开始自动使用羊毛卡...')
+                    if available_quota + available_wool < limit_quota:
+                        print('尝试自动使用羊毛卡...')
                         prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
                         if 'propVoList' in prop_ret:
+                            card_used = False
                             for prop in prop_ret['propVoList']:
                                 if 'desc' in prop and 'type' in prop:
                                     re_ret = re.search('羊毛\\+(\\d+)', prop['desc'])
@@ -1161,6 +1171,7 @@ def on_ready(s):
                                             continue # 可能可以使用小额羊毛卡
 
                                         print('使用一张', prop['desc'], '卡片...')
+                                        card_used = True
                                         use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
                                         if ('success' in use_ret
                                             and 'toastTxt' in use_ret
@@ -1177,12 +1188,15 @@ def on_ready(s):
 
                                         break
 
-                            # 使用卡片之后有足够余额可以购买最低价格商品
-                            if available_quota + available_wool >= min_price:
+                            if card_used:
                                 continue
 
-                        print('羊毛不够了，请过段时间再来...')
-                        break
+                            print('没有找到羊毛卡...')
+
+                            # 使用卡片之后仍没有足够余额可以购买最低价格商品
+                            if available_quota + available_wool < min_price:
+                                print('羊毛不够了，请过段时间再来...')
+                                break
                     elif available_quota < min_price: # 可以收取羊毛
                         print('开始自动收取', available_wool, '羊毛...')
                         wool_ret = alipay_mobile_aggrbillinfo_sheep_wool_collect(s)
@@ -1206,14 +1220,20 @@ def on_ready(s):
                                 break
 
                     if item is None or item['salePrice'] > quota:
-                        print('没有符合抽奖条件的商品，限额：', quota, '剩余商品：', item_list)
+                        print('没有符合抽奖条件的商品，限额：', quota)
                         break
 
-                    print('开始抽奖，抽奖最大限额：', quota, '奖品为：', item['title'], '价格：', item['salePrice'])
+                    print('开始抽奖，抽奖最大限额：', quota, '商品为：', item['title'], '价格：', item['salePrice'])
 
                     lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
-                    if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
-                        alipay_mobile_aggrbillinfo_group_yaoyiyao(s, lottery_ret['lotteryRecordId'])
+                    if 'lotteryCode' in lottery_ret and 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
+                        yaoyiyao_ret = alipay_mobile_aggrbillinfo_group_yaoyiyao(s, lottery_ret['lotteryRecordId'])
+                        if ('groupRecords' in yaoyiyao_ret
+                            and len(yaoyiyao_ret['groupRecords']) == 1
+                            and 'lotteryCode' in yaoyiyao_ret['groupRecords'][0]):
+                            print('已参加商品', item['title'], '的抽奖',
+                                '抽奖幸运号码：', lottery_ret['lotteryCode'],
+                                '摇一摇幸运号码：', yaoyiyao_ret['groupRecords'][0]['lotteryCode'])
 
                 else:
                     print('获取绵羊信息有误！', sheep_info)
@@ -1224,16 +1244,45 @@ def on_ready(s):
 
     #################################################################################################################################################
 
-    while False:
+    while True:
         print('开始参加组团抽奖活动...')
 
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if ('duplicateActivityVos' in sign_list
-            and 'activityStatus' in sign_list['duplicateActivityVos']
-            and 'activityType' in sign_list['duplicateActivityVos']
-            and sign_list['duplicateActivityVos']['activityStatus'] == 'INIT'): # 正在进行的组团抽奖活动
-            duplicate_activity_type = sign_list['duplicateActivityVos']['activityType']
-            tab_list = alipay_mobile_aggrbillinfo_duplicate_tab(s, duplicate_activity_type)
+            and len(sign_list['duplicateActivityVos']) == 1
+            and 'activityStatus' in sign_list['duplicateActivityVos'][0]
+            and 'activityType' in sign_list['duplicateActivityVos'][0]
+            and sign_list['duplicateActivityVos'][0]['activityStatus'] == 'INIT'): # 正在进行的组团抽奖活动
+            duplicate_activity_type = sign_list['duplicateActivityVos'][0]['activityType']
+            tab_list = alipay_mobile_aggrbillinfo_duplicate_tab(s, duplicate_activity_type, 1, 100)
+            if 'userPropNum' in tab_list and 'indexItemVoList' in tab_list:
+                user_prop_num = int(tab_list['userPropNum'])
+                times = min(user_prop_num, len(tab_list['indexItemVoList']))
+                for i in range(0, times):
+                    item = tab_list['indexItemVoList'][i]
+                    if ('activityId' in item
+                        and 'itemId' in item
+                        and 'itemType' in item
+                        and 'title' in item):
+                        status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                        if 'userPropNum' in status_info:
+                            user_prop_num = int(status_info['userPropNum'])
+
+                        print('开始组团抽奖，剩余抽奖次数：', user_prop_num, '商品为', item['title'])
+                        lottery_ret = alipay_mobile_aggrbillinfo_duplicate_lottery(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                        if 'lotteryCode' in lottery_ret and 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
+                            yaoyiyao_ret = alipay_mobile_aggrbillinfo_duplicate_group_yaoyiyao(s, item['activityId'], lottery_ret['lotteryRecordId'])
+                            if 'memberTotal' in yaoyiyao_ret and 'memberVoList' in yaoyiyao_ret:
+                                base_info = json.loads(s.exports.get_rpc_base_info())
+                                for yyy in yaoyiyao_ret['memberVoList']:
+                                    if ('lotteryCode' in yyy
+                                        and 'userId' in yyy
+                                        and yyy['userId'] == base_info['userId']):
+                                        print('已参加商品', item['title'], '的组团抽奖',
+                                            '组团人数：', yaoyiyao_ret['memberTotal'],
+                                            '抽奖幸运号码：', lottery_ret['lotteryCode'],
+                                            '摇一摇幸运号码：', yyy['lotteryCode'])
+                                        break
 
         print('已经完成组团抽奖活动！')
         break

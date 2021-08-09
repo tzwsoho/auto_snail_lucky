@@ -879,7 +879,7 @@ def collect_lottery_items_info(s, cate_confs):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_pages = 1 # 每个分类获取 10 页数据
+        max_pages = 10 # 每个分类获取 10 页数据
         min_price = 9999999.00 # 抽奖商品最低价格
 
         for page in range(1, max_pages + 1):
@@ -983,15 +983,17 @@ def on_ready(s):
                         or task['currentNum'] == task['totalNum']):
                         continue
 
-                    if task['taskStatus'] == 'INIT' and task['taskJumpType'].find('JUMP') >= 0:
+                    if task['taskJumpType'].find('JUMP') >= 0:
                         for i in range(0, int(task['totalNum'])):
                             task_ret = alipay_mobile_aggrbillinfo_sheep_finishtask(s, task['taskId'])
                             if ('taskStatus' in task_ret
                                 and 'taskPrizeNum' in task_ret
                                 and task_ret['taskStatus'] == 'FINISHED'):
                                 award_ret = alipay_mobile_aggrbillinfo_sheep_taskaward(s, task['taskId'], task_ret['taskPrizeNum'])
-                                if 'success' in award_ret:
-                                    print('任务 “' + task['taskTitle'] + '” 奖励', task_ret['taskPrizeNum'], '饲料领取成功！')
+                                if 'success' in award_ret and award_ret['success']:
+                                    print('任务 “' + task['taskTitle'] + '” 奖励', task['taskPrizeNum'], '饲料领取成功！')
+                                elif 'errorMsg' in award_ret:
+                                    print('任务 “' + task['taskTitle'] + '” 奖励领取失败：', award_ret['errorMsg'])
                                 else:
                                     print('任务 “' + task['taskTitle'] + '” 奖励领取失败！')
 
@@ -999,10 +1001,12 @@ def on_ready(s):
                             else:
                                 print('任务 “' + task['taskTitle'] + '” 完成失败！')
                                 break
-                    elif task['taskStatus'] == 'RECEIVE_PRIZE' and 'taskPrizeNum' in task:
+                    elif 'taskPrizeNum' in task:
                         award_ret = alipay_mobile_aggrbillinfo_sheep_taskaward(s, task['taskId'], task['taskPrizeNum'])
-                        if 'success' in award_ret:
+                        if 'success' in award_ret and award_ret['success']:
                             print('任务 “' + task['taskTitle'] + '” 奖励', task['taskPrizeNum'], '饲料领取成功！')
+                        elif 'errorMsg' in award_ret:
+                            print('任务 “' + task['taskTitle'] + '” 奖励领取失败：', award_ret['errorMsg'])
                         else:
                             print('任务 “' + task['taskTitle'] + '” 奖励领取失败！')
 
@@ -1103,12 +1107,11 @@ def on_ready(s):
                     except Exception as e:
                         print(e)
 
-        print('开始领奖...')
+        # print('开始领奖...')
         # if 'successRecords' in msg_list:
             # for msg in msg_list['successRecords']:
                 # TODO 领奖
                 # if 'status' in msg and msg['status'] == '':
-
 
         print('已经完成领奖和沾好运！', '\n' + '*' * 120)
         break
@@ -1218,6 +1221,10 @@ def on_ready(s):
                             item_list.remove(item)
                             if item['salePrice'] <= quota:
                                 break
+
+                    # 商品表里的商品价格已经低于可抽奖额度的一半，为避免抽到低价商品，故重新获取商品列表
+                    if quota == limit_quota and item['salePrice'] < quota / 2:
+                        item_list, min_price = collect_lottery_items_info(s, sign_list['cateConfs'])
 
                     if item is None or item['salePrice'] > quota:
                         print('没有符合抽奖条件的商品，限额：', quota)

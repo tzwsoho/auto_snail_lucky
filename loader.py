@@ -997,7 +997,7 @@ def on_ready(s):
                                 else:
                                     print('任务 “' + task['taskTitle'] + '” 奖励领取失败！')
 
-                                print('任务 “' + task['taskTitle'] + '” 成功完成', i, '/', task['totalNum'], '次！')
+                                print('任务 “' + task['taskTitle'] + '” 成功完成', (i + 1), '/', task['totalNum'], '次！')
                             else:
                                 print('任务 “' + task['taskTitle'] + '” 完成失败！')
                                 break

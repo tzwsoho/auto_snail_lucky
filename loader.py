@@ -1060,16 +1060,28 @@ def on_ready(s):
 
                 if feed_times < 10:
                     feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, 100)
-                    if 'availableFodder' in feed_ret and 'needFeedTimes' in feed_ret:
+                    if ('success' in feed_ret
+                        and feed_ret['success']
+                        and 'availableFodder' in feed_ret
+                        and 'needFeedTimes' in feed_ret):
                         need_feed_times = int(feed_ret['needFeedTimes'])
                         available_fodder = int(feed_ret['availableFodder'])
                         print('喂 1 次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
+                    elif 'errorMsg' in feed_ret:
+                        print('喂羊失败：', feed_ret['errorMsg'])
+                        break
                 else:
                     feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, 1000)
-                    if 'availableFodder' in feed_ret and 'needFeedTimes' in feed_ret:
+                    if ('success' in feed_ret
+                        and feed_ret['success']
+                        and 'availableFodder' in feed_ret
+                        and 'needFeedTimes' in feed_ret):
                         need_feed_times = int(feed_ret['needFeedTimes'])
                         available_fodder = int(feed_ret['availableFodder'])
                         print('喂 10 次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
+                    elif 'errorMsg' in feed_ret:
+                        print('喂羊失败：', feed_ret['errorMsg'])
+                        break
 
                 if ('propsGiftBox' in feed_ret
                     and 'status' in feed_ret['propsGiftBox']

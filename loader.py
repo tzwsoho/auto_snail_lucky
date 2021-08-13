@@ -11,6 +11,7 @@ import base64
 import random
 import _thread
 import requests
+import traceback
 import functools
 import urllib.parse
 
@@ -19,9 +20,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 #################################################################################################################################################
 
-app_version = '3.1.0'
-client_version = '3.5.1.0'
-request_interval = 0.5
+app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+client_version = '3.5.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
 
@@ -40,7 +41,7 @@ if pid == 0:
 if pid == 0:
     os._exit(0)
 
-print(pid)
+print('几羊进程 ID：', pid)
 
 session = device.attach(pid)
 with open('index.js') as f:
@@ -147,10 +148,11 @@ def build_curl(headers, data):
 def alipay_request(headers, data):
     url = 'https://snailgw.shulidata.com/mgw.htm'
     # build_curl(headers, data)
+    ret = ''
 
     try:
         data = gzip.compress(data.encode('utf-8'))
-        res = requests.post(url, headers = headers, data = data, verify = False)
+        res = requests.post(url, headers = headers, data = data, verify = False, timeout = 20)
 
         # 每个请求间隔一段时间，避免封号
         if request_interval > 0:
@@ -159,9 +161,10 @@ def alipay_request(headers, data):
         ret = res.content.decode('utf-8')
         # print('*' * 120, '\n', ret, '\n' + '*' * 120)
         return json.loads(ret)
-    except Exception as e:
-        print('!' * 120, '\n', e, '\n', '!' * 120)
-        return None
+    except Exception:
+        traceback.print_exc()
+        print('!' * 120, '\n', ret, '\n' + '!' * 120)
+        return dict()
 
 #################################################################################################################################################
 
@@ -325,6 +328,82 @@ def alipay_mobile_aggrbillinfo_sheep_collect_milk(s):
         'idfa': '',
         'platform': 'h5',
         'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.5.1.0","idfa":"","platform":"h5","token":"1a8cfba775c8d44db131d9bbc133c9cb","userId":"8088015060932312","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
+# 获取羊奶兑换现金的商品列表
+# {"activityInfos":[{"activityType":"RANDOM","goldNum":0,"goldStr":"对应100-100000羊奶","iconBackGroupColor":"#FD6561","iconText":"随机提现","money":0,"moneyStr":"0.01-10.00元","priority":1,"showAppWithDrawBtnTxt":false},{"activityType":"WITHDRAW_1000","goldNum":99950,"goldStr":"对应99,950羊奶","iconBackGroupColor":"#FD6561","iconText":"超高人气","money":1000,"moneyStr":"10.00元","priority":2,"showAppWithDrawBtnTxt":false},{"activityType":"WITHDRAW_2000","goldNum":199800,"goldStr":"对应199,800羊奶","iconBackGroupColor":"#FD6561","iconText":"超高人气","money":2000,"moneyStr":"20.00元","priority":3,"showAppWithDrawBtnTxt":false},{"activityType":"WITHDRAW_5000","goldNum":499000,"goldStr":"对应499,000羊奶","iconBackGroupColor":"#BFBFBF","iconText":"秒到账","money":5000,"moneyStr":"50.00元","priority":5,"showAppWithDrawBtnTxt":false},{"activityType":"WITHDRAW_10000","goldNum":998000,"goldStr":"对应998,000羊奶","iconBackGroupColor":"#BFBFBF","iconText":"最划算","money":10000,"moneyStr":"100.00元","priority":6,"showAppWithDrawBtnTxt":false},{"activityType":"WITHDRAW_20000","goldNum":1994000,"goldStr":"对应1994,000羊奶","iconBackGroupColor":"#BFBFBF","iconText":"最划算","money":20000,"moneyStr":"200.00元","priority":7,"showAppWithDrawBtnTxt":false}],"alertText":"xxxxx","appWithDrawBtnTxt":"APP专享","bindAlipayStatus":true,"bindWeixinpayStatus":false,"goldNumStr":"93,920","goldToMoneyStr":"9.39","idem":false,"noBindText":"暂未绑定支付宝账号","sheepMood":"100","sheepMoodCopywriting":"小羊心情值100，心情不错，羊奶很新鲜","sheepMoodPopupsCopywriting":"当心情值<10时，将每天扣减500羊奶；\n经常来看看，每天能提升3心情值，让羊奶不过期","success":true,"typeInfoList":[{"icon":"xxx","name":"支付宝","type":"ALI_PAY"}]}
+def alipay_mobile_aggrbillinfo_withdraw_index(s):
+    operation_type = 'alipay.mobile.aggrbillinfo.withdraw.index'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'appName': '',
+        'appVersion': app_version,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'platform': 'h5',
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"activityType":"RANDOM","appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.5.1.0","idfa":"","platform":"h5","token":"1a8cfba775c8d44db131d9bbc133c9cb","userId":"8088015060932312","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx","withdrawType":"ALI_PAY"}]
+# 兑换羊奶为现金
+# {"errorCode":"0099","errorMsg":"今日随机提现次数用完咯，明日再来试试","idem":false,"success":false}
+# {"errInfoList":[{"clickButtonText":"支付宝","clickUrl":"xxx","title":"金额少于最小金额"}],"idem":false,"spendGoldNumStr":"200","status":"SUCC","statusIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*yArvTo0MkTMAAAAAAAAAAAAAARQnAQ","statusText":"提现成功","succButtonText":"去支付宝查看","success":true,"topIcon":"","topText":"金额将提现至您当前账户绑定的支付宝账户上，请注意查收 。","transId":"2021081402203138531","transferTimeStr":"2021-08-14 01:35:23","withdrawMoneyStr":"￥0.02"}
+def alipay_mobile_aggrbillinfo_withdraw_withdraw(s, activity_type):
+    operation_type = 'alipay.mobile.aggrbillinfo.withdraw.withdraw'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'activityType': activity_type,
+        'appName': '',
+        'appVersion': app_version,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'platform': 'h5',
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+        'withdrawType': 'ALI_PAY',
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.5.1.0","idfa":"","platform":"h5","token":"1a8cfba775c8d44db131d9bbc133c9cb","transId":"2021081402203138531","userId":"8088015060932312","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
+# 获取兑换羊奶结果
+# {"errInfoList":[{"clickButtonText":"支付宝","clickUrl":"xxx","title":"金额少于最小金额"}],"idem":false,"spendGoldNumStr":"200","status":"SUCC","statusIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*yArvTo0MkTMAAAAAAAAAAAAAARQnAQ","statusText":"提现成功","succButtonText":"去支付宝查看","success":true,"topIcon":"","topText":"金额将提现至您当前账户绑定的支付宝账户上，请注意查收 。","transId":"2021081402203138531","transferTimeStr":"2021-08-14 01:35:23","withdrawMoneyStr":"￥0.02"}
+def alipay_mobile_aggrbillinfo_withdraw_result(s, trans_id):
+    operation_type = 'alipay.mobile.aggrbillinfo.withdraw.result'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'appName': '',
+        'appVersion': app_version,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'platform': 'h5',
+        'token': base_info['token'],
+        'transId': trans_id,
         'userId': base_info['userId'],
         'utdid': base_info['utdid'],
     }], separators=(',', ':'))
@@ -774,6 +853,36 @@ def alipay_mobile_aggrbillinfo_duplicate_award(s, lottery_record_id):
     headers = alipay_headers(s, base_info, operation_type, ts, sign)
     return alipay_request(headers, request_data)
 
+# [{"apdid":"eYOIkqXXI47JWb8cn6D0oxaU6hpIwTEZaRVOVsJYT4PVrbuCEep0RQBG","bizScene":"HOT","bizSource":"INDEX_TAB","clientKey":"IBdxM1u3SL","clientVersion":"3.5.0.73","model":"NX563J","pageNo":2,"pageSize":20,"platform":"Android","remainTime":23,"token":"1a8cfba775c8d44db131d9bbc133c9cb","topLuckyRecordId":"","userId":"8088015060932312","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
+# 获取发现频道晒奖列表
+# {"idem":false,"propsGiftBox":{"bizType":"SHARE_SQUARE","expireTime":1628870400000,"giftBoxId":"2021081303346819431","icon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*kvxBT7RkWcEAAAAAAAAAAAAAARQnAQ","level":"2","status":"WAIT_OPEN","tip":"点击可开宝箱哦～","title":"黄金宝箱","type":"GOLD"},"recommendShareInfo":{"itemType":"ONE_SEE_GOODS","lotteryRecordId":"2021080204178453831","pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01lf1qUF1ri9zRPSZny_!!2208161825664-0-cib.jpg_350x350.jpg","recommendShare":true},"shareLatestTime":1628838734314,"shareRecords":[{"activityId":"2021072100703711800","activityType":"SINGLE_LOTTERY","auditReason":"","auditStatus":"PASS","avatar":"https://tfs.alipayobjects.com/images/partner/TB1pzC0bzyEDuNkUQusXXbvMVXa","city":"昆明","commentInfo":{"commentCount":2240,"latestComments":[{"birthLabel":"95后","city":"深圳","comment":"羡慕","commentIcon":"","commentId":"2021081301095554656","commentTemplateId":"1bc2b87b376d01bf8024c987f8a5909a","commentTime":"3小时前","commentTransId":"2021081302548408610","status":"PUBLISH","thumbUpTotal":0,"userAvatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*Hrp0RK4W78YAAAAAAAAAAAAADsZ1AA/original?t=y5evWEjglK3rokuwnGhjIwAAAABkdcYAAAAA","userGender":"M","userId":"8088017131220566","userNickName":"海龟","userShowInfoVo":{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*Hrp0RK4W78YAAAAAAAAAAAAADsZ1AA/original?t=y5evWEjglK3rokuwnGhjIwAAAABkdcYAAAAA","cancelRelationFlag":false,"constellationLabel":"双鱼座","endColor":"#D8B09A","genderLabel":"M","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*bLAXRozD7mUAAAAAAAAAAAAAARQnAQ","lotteryLabel":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*K7ksSbuhBnEAAAAAAAAAAAAAARQnAQ","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*w8ycQpdQKVAAAAAAAAAAAAAAARQnAQ","nickName":"海龟","officialLabel":"NORMAL","otherLabel":["95后","深圳"],"startColor":"#F9E3D6","userId":"8088017131220566"},"userTag":""},{"birthLabel":"05后","city":"桂林","comment":"轻轻一点，运气加倍，嘿嘿","commentIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*ZbngSoXNdfMAAAAAAAAAAAAAARQnAQ","commentId":"2021081301131699248","commentTemplateId":"39","commentTime":"7小时前","commentTransId":"2021081302539867910","status":"PUBLISH","thumbUpTotal":0,"userAvatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*xJvlRaUvrMUAAAAAAAAAAAAADsZ1AA/original?t=bcfTRKLEst_7KX9YsSuOiAAAAABkdcYAAAAA","userGender":"F","userId":"8088004036374489","userNickName":"爱笑的女孩运气不差吧","userShowInfoVo":{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*xJvlRaUvrMUAAAAAAAAAAAAADsZ1AA/original?t=bcfTRKLEst_7KX9YsSuOiAAAAABkdcYAAAAA","cancelRelationFlag":false,"constellationLabel":"双鱼座","endColor":"#D8B09A","genderLabel":"F","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*bLAXRozD7mUAAAAAAAAAAAAAARQnAQ","lotteryLabel":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*K7ksSbuhBnEAAAAAAAAAAAAAARQnAQ","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*w8ycQpdQKVAAAAAAAAAAAAAAARQnAQ","nickName":"爱笑的女孩运气不差吧","officialLabel":"NORMAL","otherLabel":["05后","桂林"],"startColor":"#F9E3D6","userId":"8088004036374489"},"userTag":""}]},"gender":"M","gmtOpen":1626919200000,"imageUrls":["https://mdn.alipayobjects.com/snail_avatar/afts/img/A*8HaQSpWjBaAAAAAAAAAAAAAAAQAAAQ/80p","https://mdn.alipayobjects.com/snail_avatar/afts/img/A*gKRxToKdcCcAAAAAAAAAAAAAAQAAAQ/80p"],"item":{"discount":"169.98","expireFlag":false,"finalPrice":"9829.02","itemClickUrl":"tbopen://m.taobao.com/tbopen/index.html?action=ali.open.nav&module=h5&source=alimama&bc_fl_src=tunion_vipmedia_sy&h5Url=https%3A%2F%2Fs.click.taobao.com%2Ft%3Fe%3Dm%253D2%2526s%253DthjpdjGz7rtw4vFB6t2Z2ueEDrYVVa64r4ll3HtqqoxyINtkUhsv0Dx1W73Y%252BDaE%252Fc5HvFSRlDF8wNSpnfMOYxuOf%252Fc28c7F9HCa%252BmBT5tVCP5SCFWxeqrutGDFC4Ggc1GPduzu4oNoy8vgdE4C5iTQMk5v3Gg14PTEHn5TWCEb16UiVr4iIsd9AyuQiphV2xgxdTc00KD8%253D%26scm%3Dnull%26pvid%3D100_11.178.152.80_120842_7011626849622871936%26app_pvid%3D59590_33.4.180.204_751_1626849622866%26ptl%3DfloorId%3A2836%3BoriginalFloorId%3A2836%3Bpvid%3A100_11.178.152.80_120842_7011626849622871936%3Bapp_pvid%3A59590_33.4.180.204_751_1626849622866%26xId%3D1831AoUlWSe5UIGO8dyuXKNxvS9O1d1aSPsEBFTmmcCTIUHv54ES3cYbRf6eD99CB8VZnxCU8xs7oa9X893quFJzz0EjPMAZbXOPXeFGaZ8R%26union_lens%3DlensId%253AMAPI%25401626849622%25402104b4cc_0857_17ac7cb3b64_2c9f%254001%26relationId%3D2590722717","itemId":"627941215987","itemSource":"淘宝","itemType":"TBK_GOODS","pictUrl":"https://img.alicdn.com/bao/uploaded/i3/3221418665/O1CN01gcvVcI2Dscb32THfM_!!0-item_pic.jpg","salePrice":"9999.00","title":"samsung /三星qa55q700tajxxz电视","whiteImage":""},"lastAuditedTime":1627626326000,"lastSubmitTime":1627547761000,"lotteryCode":"7231004","lotteryCodeSource":"CUSTOMIZE","lotteryRecordId":"2021072103887790413","luckyType":"PERSON","nickName":"好","period":"2021-07-21","recordLabel":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*VJUrQ6AzKSMAAAAAAAAAAAAAARQnAQ","secStatus":"UN_CHECK","shareContent":"天天忙着抽大奖，几羊好运送到家。自从玩几羊以来，只要有空就抽奖，自选码出了后，终于自选码立功了。希望几羊越做越好，财源滚滚！也祝玩 几羊的朋友们运气爆棚，也让我再沾沾光。","shareRecordId":"2021072202166121000","shareTime":1627626326000,"shareVideoInfoList":[],"status":"AUDIT_PASS","subTitle":"20210721期中奖","tag":"70后","thumbUpInfo":{"canPickLuck":false,"thumbUpCount":1237,"thumbed":false},"type":"OFFICIAL","userId":"8088000569523132","userShowInfoVo":{"avatar":"https://tfs.alipayobjects.com/images/partner/TB1pzC0bzyEDuNkUQusXXbvMVXa","cancelRelationFlag":false,"constellationLabel":"处女座","endColor":"#737E9A","genderLabel":"M","growthScore":"1671","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*GtpkRqQBOncAAAAAAAAAAAAAARQnAQ","lotteryLabel":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*K7ksSbuhBnEAAAAAAAAAAAAAARQnAQ","memberLevel":"4","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*hkKKRpOxZpMAAAAAAAAAAAAAARQnAQ","nextLevelDocument":"还需785成长值下周可升级传承黑金会员","nextLevelGrowthScore":"2456","nickName":"好","officialLabel":"NORMAL","otherLabel":["70后","昆明"],"startColor":"#B0B8D0","userId":"8088000569523132"}},{"activityId":"2021072400726242300","activityType":"SINGLE_LOTTERY","auditReason":"","auditStatus":"PASS","avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*_asPSr2pMWUAAAAAAAAAAAAADsZ1AA/original?t=syIiqHIdWWOWgZjvqxlbDgAAAABkdcYAAAAA","commentInfo":{"commentCount":1236,"latestComments":[{"birthLabel":"10后","city":"广州","comment":"默默赞一下留下羡慕的背影","commentIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*uHZVQb-mGnEAAAAAAAAAAAAAARQnAQ","commentId":"2021081301407490077","commentTemplateId":"17","commentTime":"32分钟前","commentTransId":"2021081302593089466","status":"PUBLISH","thumbUpTotal":0,"userAvatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*6-auSoBHdRYAAAAAAAAAAAAADsZ1AA/original?t=_3UC_Q6mhcdRsKn_2p4GLAAAAABkdcYAAAAA","userGender":"M","userId":"8088012787276778","userNickName":"豁达的八宝粥","userShowInfoVo":{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*6-auSoBHdRYAAAAAAAAAAAAADsZ1AA/original?t=_3UC_Q6mhcdRsKn_2p4GLAAAAABkdcYAAAAA","cancelRelationFlag":false,"constellationLabel":"摩羯 座","endColor":"#D8B09A","genderLabel":"M","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*bLAXRozD7mUAAAAAAAAAAAAAARQnAQ","lotteryLabel":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*K7ksSbuhBnEAAAAAAAAAAAAAARQnAQ","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*w8ycQpdQKVAAAAAAAAAAAAAAARQnAQ","nickName":"豁达的八宝 粥","officialLabel":"NORMAL","otherLabel":["10后","广州"],"startColor":"#F9E3D6","userId":"8088012787276778"},"userTag":""},{"comment":"👍","commentIcon":"","commentId":"2021081300977896445","commentTemplateId":"c0eb33f9757e9085882a3b90a5f73c7b","commentTime":"1小时前","commentTransId":"2021081302592603266","status":"PUBLISH","thumbUpTotal":0,"userAvatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*AYA9S5b8D2cAAAAAAAAAAAAADsZ1AA/original?t=5990jijYjZx5u-czcjp8KQAAAABkdcYAAAAA","userGender":"","userId":"8088017449994452","userNickName":"AI 时代","userShowInfoVo":{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*AYA9S5b8D2cAAAAAAAAAAAAADsZ1AA/original?t=5990jijYjZx5u-czcjp8KQAAAABkdcYAAAAA","cancelRelationFlag":false,"endColor":"#D8B09A","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*bLAXRozD7mUAAAAAAAAAAAAAARQnAQ","lotteryLabel":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*K7ksSbuhBnEAAAAAAAAAAAAAARQnAQ","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*w8ycQpdQKVAAAAAAAAAAAAAAARQnAQ","nickName":"AI 时代","officialLabel":"NORMAL","startColor":"#F9E3D6","userId":"8088017449994452"},"userTag":""}]},"gmtOpen":1627178400000,"imageUrls":["https://mdn.alipayobjects.com/snail_avatar/afts/img/A*BdQ0SKWUrlMAAAAAAAAAAAAAAQAAAQ/80p","https://mdn.alipayobjects.com/snail_avatar/afts/img/A*4y3iTbllB3sAAAAAAAAAAAAAAQAAAQ/80p","https://mdn.alipayobjects.com/snail_avatar/afts/img/A*73sDSJDxwnYAAAAAAAAAAAAAAQAAAQ/80p","https://mdn.alipayobjects.com/snail_avatar/afts/img/A*uI2kTrGTt_AAAAAAAAAAAAAAAQAAAQ/80p","https://mdn.alipayobjects.com/snail_avatar/afts/img/A*yyFnSJFY16MAAAAAAAAAAAAAAQAAAQ/80p"],"item":{"discount":"14.64","expireFlag":false,"finalPrice":"5843.36","itemClickUrl":"tbopen://m.taobao.com/tbopen/index.html?action=ali.open.nav&module=h5&source=alimama&bc_fl_src=tunion_vipmedia_sy&h5Url=https%3A%2F%2Fs.click.taobao.com%2Ft%3Fe%3Dm%253D2%2526s%253DnjbitCLijzZw4vFB6t2Z2ueEDrYVVa64r4ll3HtqqoxyINtkUhsv0N2E%252BqmNVeclIdbSor0PwI18wNSpnfMOYxuOf%252Fc28c7F9HCa%252BmBT5tVCP5SCFWxeqrutGDFC4Ggc1GPduzu4oNoA%252FdY02BsM%252BfIvMmf4HrmBKJGlCwsUoYPNvEJW%252BUp2G99AyuQiphV2xgxdTc00KD8%253D%26scm%3Dnull%26pvid%3D100_11.139.191.152_121246_8531627111927345252%26app_pvid%3D59590_11.186.101.210_799_1627111927340%26ptl%3DfloorId%3A2836%3BoriginalFloorId%3A2836%3Bpvid%3A100_11.139.191.152_121246_8531627111927345252%3Bapp_pvid%3A59590_11.186.101.210_799_1627111927340%26xId%3D6OoOMN88rylYqR2o9py24V5E1YAKWIq4rZLpYDuzXanCiO7VT87E2gDYjoEhuLJFLtVsXHchYx7QmBmsVYWUJzxzjyX2Gv7s7EYvZ6zsLIv2%26union_lens%3DlensId%253AMAPI%25401627111927%25400bba65d2_0e9b_17ad76dae3e_6e70%254001%26relationId%3D2590722717","itemId":"629719200979","itemSource":"淘宝","itemType":"TBK_GOODS","pictUrl":"https://img.alicdn.com/bao/uploaded/i1/2088045547/O1CN01kdx6hf1qqZff1TvxL_!!0-item_pic.jpg","salePrice":"5858.00","title":"优惠750【24期免息】huawei /华为","tmallBrandName":"京合","whiteImage":"https://img.alicdn.com/bao/uploaded/i1/6000000001105/O1CN01l1VlHE1K28IAmuj59_!!6000000001105-0-yinhe.jpg"},"lastAuditedTime":1627626286000,"lastSubmitTime":1627546898000,"lotteryCode":"2699909","lotteryCodeSource":"OWN","lotteryRecordId":"2021072403930830983","luckyType":"PERSON","nickName":"尘土","period":"2021-07-24","recordLabel":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*IXPOQ6YlKwMAAAAAAAAAAAAAARQnAQ","secStatus":"UN_CHECK","shareContent":"我中奖了，努力了大半年，这次7位数全对，1‰万的概率。坎坷和兴奋中等待了三天，现在收到货了，感谢几羊。现在把这份幸运分享给你们，希望...
+def alipay_mobile_aggrbillinfo_share_square(s, page_no, page_size, remain_time):
+    operation_type = 'alipay.mobile.aggrbillinfo.share.square'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'apdid': base_info['apdid'],
+        'bizScene': 'HOT',
+        'bizSource': 'INDEX_TAB',
+        'clientKey': base_info['clientKey'],
+        'clientVersion': base_info['clientVersion'],
+        'model': base_info['model'],
+        'pageNo': page_no,
+        'pageSize': page_size,
+        'platform': base_info['platform'],
+        'remainTime': remain_time,
+        'token': base_info['token'],
+        'topLuckyRecordId': '',
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+
 # [{"appName":"","appVersion":"3.1.0","bizType":"LOTTERY","clientKey":"IBdxM1u3SL","clientVersion":"3.4.1.0","idfa":"","pageNo":1,"pageSize":20,"platform":"h5","token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 获取消息列表
 # {"idem":false,"messageInfos":[{"bizType":"LOTTERY_OPEN","boxIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*wUfHT5SbC7YAAAAAAAAAAAAAARQnAQ","content":"20210803期开奖啦，快看看你是不是幸运儿～","extInfo":"{\"activityId\":\"2021080300805830300\",\"itemId\":\"566542751369\"}","icon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*joB5Q6oBEn4AAAAAAAAAAAAAARQnAQ","linkUrl":"wisheep://platformapi/startApp?appId=60000004&activityId=2021080300805830300","messageId":"2021080302961158670","nodeType":"MESSAGE","readStatus":"READ","showTime":"10:00","time":1628042404000,"title":"你参与的抽奖开奖啦","unreadCount":0},{"bizType":"LOTTERY_OPEN","boxIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*wUfHT5SbC7YAAAAAAAAAAAAAARQnAQ","content":"20210802期开奖啦，快看看你是不是幸运儿～","extInfo":"{\"activityId\":\"2021080200800227500\",\"itemId\":\"543586438630\"}","icon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*joB5Q6oBEn4AAAAAAAAAAAAAARQnAQ","linkUrl":"wisheep://platformapi/startApp?appId=60000004&activityId=2021080200800227500","messageId":"2021080202929780870","nodeType":"MESSAGE","readStatus":"READ","showTime":"昨天","time":1627956001000,"title":"你参与的抽奖开奖啦","unreadCount":0}...
@@ -879,13 +988,12 @@ def collect_lottery_items_info(s, cate_confs):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_pages = 10 # 每个分类获取 10 页数据
-        min_price = 9999999.00 # 抽奖商品最低价格
+        max_lottery_pages = 5 # 每个分类获取 5 页数据
 
-        for page in range(1, max_pages + 1):
-            print('正在获取分类', titles[i], '下第', page, '/', max_pages, '页商品信息，已获取到', len(items), '件商品信息...')
+        for page in range(1, max_lottery_pages + 1):
+            print('正在获取分类', titles[i], '下第', page, '/', max_lottery_pages, '页商品信息，已获取到', len(items), '件商品信息...')
 
-            # TODO 暂时不知道 remainTime 参数的用途
+            # TODO 暂时不知道 remainTime 参数的用途，页面定时刷新倒计时？
             # mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], 0)
             mall_list = alipay_mobile_aggrbillinfo_mall_list(s, page, page_size, param_strs[i], random.randint(0, 300))
             if mall_list is None:
@@ -917,9 +1025,6 @@ def collect_lottery_items_info(s, cate_confs):
                             'participateCount': item['participateCount']
                         }
 
-                        if min_price > sale_price:
-                            min_price = sale_price
-
     # 对商品排序
     def cmp_item(x, y):
         # 按价格顺序
@@ -943,9 +1048,9 @@ def collect_lottery_items_info(s, cate_confs):
     for _, v in items.items():
         item_list.append(v)
     item_list.sort(key = functools.cmp_to_key(cmp_item))
-    print('已获取到共计', len(item_list), '件商品信息，商品最低价格为：', min_price, '现在开始自动抽奖...')
+    print('已获取到共计', len(item_list), '件商品信息, 现在开始自动抽奖...')
 
-    return item_list, min_price
+    return item_list
 
 def on_ready(s):
     while True:
@@ -1025,8 +1130,6 @@ def on_ready(s):
             and 'giftBoxId' in sheep_info_extra['propsGiftBox']): # 可以开宝箱
             open_box(s, sheep_info_extra['propsGiftBox']['giftBoxId'])
 
-        # if 'hasAcquireFodder' in sheep_info_extra and not sheep_info_extra['hasAcquireFodder']: # TODO 可以雇佣去打工？
-
         # 领取饲料
         popup_info = alipay_mobile_aggrbillinfo_sheep_fodder_popup(s)
         if ('status' in popup_info
@@ -1079,6 +1182,9 @@ def on_ready(s):
                     elif 'errorMsg' in feed_ret:
                         print('喂羊失败：', feed_ret['errorMsg'])
                         break
+                    else:
+                        print('喂羊失败！')
+                        break
                 else:
                     feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, 1000)
                     if ('success' in feed_ret
@@ -1090,6 +1196,9 @@ def on_ready(s):
                         print('喂 10 次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
                     elif 'errorMsg' in feed_ret:
                         print('喂羊失败：', feed_ret['errorMsg'])
+                        break
+                    else:
+                        print('喂羊失败！')
                         break
 
                 if ('propsGiftBox' in feed_ret
@@ -1103,19 +1212,77 @@ def on_ready(s):
                     available_fodder = int(feed_ret['availableFodder'])
                     print('当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
 
+            withdraw_list = alipay_mobile_aggrbillinfo_withdraw_index(s)
+            if ('goldNumStr' in withdraw_list
+                and 'activityInfos' in withdraw_list
+                and len(withdraw_list['activityInfos']) > 0):
+                gold_num = int(withdraw_list['goldNumStr'].replace(',', ''))
+
+                least_gold_num = 0
+                least_activity_type = None
+                for withdraw in withdraw_list['activityInfos']:
+                    if ('goldNum' in withdraw
+                        and 'activityType' in withdraw
+                        and least_gold_num <= withdraw['goldNum']
+                        and gold_num >= withdraw['goldNum']):
+                        least_gold_num = withdraw['goldNum']
+                        least_activity_type = withdraw['activityType']
+
+                if least_activity_type is not None:
+                    withdraw_ret = alipay_mobile_aggrbillinfo_withdraw_withdraw(s, least_activity_type)
+                    if ('success' in withdraw_ret
+                        and withdraw_ret['success']
+                        and 'topText' in withdraw_ret
+                        and 'transId' in withdraw_ret
+                        and 'withdrawMoneyStr' in withdraw_ret):
+                        print(withdraw_ret['topText'], '成功兑换金额：', withdraw_ret['withdrawMoneyStr'])
+
+                        alipay_mobile_aggrbillinfo_withdraw_result(s, withdraw_ret['transId'])
+                    elif 'errorMsg' in withdraw_ret:
+                        print('兑换羊奶为现金失败：', withdraw_ret['errorMsg'])
+                    else:
+                        print('兑换羊奶为现金失败！')
+
         print('已经完成喂羊和领羊奶！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################
 
+    # TODO 以下功能需要破解支付宝
+    # TODO 在支付宝才能完成的领饲料任务
+    # TODO 在支付宝才能完成的领金币任务
+    # TODO 自动雇佣绵羊打工
+    # TODO 自动领取打工金币
+    # TODO 自动使用金币兑换支付红包
+
+    #################################################################################################################################################
+
     while True:
-        print('查看开奖消息并领奖和沾好运...')
+        print('查看发现页面并开宝箱...')
+
+        max_share_pages = 5 # 每天总共 5 个宝箱
+        for i in range(1, max_share_pages + 1):
+            # TODO 暂时不知道 remainTime 参数的用途，页面定时刷新倒计时？
+            share_list = alipay_mobile_aggrbillinfo_share_square(s, 1, 20, random.randint(0, 300))
+            if ('propsGiftBox' in share_list
+                and 'status' in share_list['propsGiftBox']
+                and 'giftBoxId' in share_list['propsGiftBox']
+                and share_list['propsGiftBox']['status'] == 'WAIT_OPEN'): # 可以开宝箱
+                open_box(s, share_list['propsGiftBox']['giftBoxId'])
+
+        print('已经完成查看发现页面并开宝箱！', '\n' + '*' * 120)
+        break
+
+    #################################################################################################################################################
+
+    while True:
+        print('查看开奖消息并沾好运...')
 
         msg_list = alipay_mobile_aggrbillinfo_message_box_list(s, 1, 20)
-        print('开始沾好运...')
         if 'messageInfos' in msg_list:
             for msg in msg_list['messageInfos']:
-                if 'extInfo' in msg:
+                if 'messageId' in msg and 'extInfo' in msg:
+                    print('正在查看 ID 为', msg['messageId'], '的开奖消息并沾好运...')
                     try:
                         ext_info = json.loads(msg['extInfo'])
                         if 'activityId' in ext_info:
@@ -1125,16 +1292,11 @@ def on_ready(s):
                                     if ('propsGiftBox' in lucky_dog
                                         and 'giftBoxId' in lucky_dog['propsGiftBox']):
                                         open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
-                    except Exception as e:
-                        print(e)
+                    except Exception:
+                        traceback.print_exc()
+                        print('!' * 120, '\n', msg['extInfo'], '\n' + '!' * 120)
 
-        # print('开始领奖...')
-        # if 'successRecords' in msg_list:
-            # for msg in msg_list['successRecords']:
-                # TODO 领奖
-                # if 'status' in msg and msg['status'] == '':
-
-        print('已经完成领奖和沾好运！', '\n' + '*' * 120)
+        print('已经完成查看开奖消息并沾好运！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################
@@ -1166,6 +1328,7 @@ def on_ready(s):
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:
             # 开始抽奖
+            item_list = None
             while True:
                 # 获取绵羊信息
                 sheep_info = alipay_mobile_aggrbillinfo_sheep_info(s)
@@ -1178,7 +1341,7 @@ def on_ready(s):
                     limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
                     available_wool = float(sheep_info['availableWool']) # 目前可以收取的羊毛数
 
-                    print('当前可用来抽奖的羊毛：', available_quota, '可收取羊毛：', available_wool, '可抽奖商品限额：', limit_quota)
+                    print('当前可用来抽奖的羊毛：', available_quota, '可收取羊毛：', available_wool, '可抽奖商品价格上限：', limit_quota)
 
                     if (available_quota < limit_quota
                         and available_wool > 0): # 当前用来抽奖的羊毛比可抽奖商品价格上限少，可以先收取羊毛
@@ -1202,7 +1365,7 @@ def on_ready(s):
                             for prop in prop_ret['propVoList']:
                                 if 'desc' in prop and 'type' in prop:
                                     re_ret = re.search('羊毛\\+(\\d+)', prop['desc'])
-                                    if not (re_ret is None):
+                                    if re_ret is not None:
                                         wool = int(re_ret.group(1))
                                         if available_quota + wool > total_quota: # 已经达到羊毛最大储存限额
                                             continue # 有可能还可以使用较小额的羊毛卡
@@ -1216,10 +1379,8 @@ def on_ready(s):
 
                                             card_used = True
                                             available_quota += wool
-                                        elif ('success' in use_ret
-                                            and 'errorMsg' in use_ret
-                                            and not use_ret['success']):
-                                            print(use_ret['errorMsg'])
+                                        elif 'errorMsg' in use_ret:
+                                            print('卡片使用失败：', use_ret['errorMsg'])
                                             break
                                         else:
                                             print('卡片使用失败！')
@@ -1232,17 +1393,10 @@ def on_ready(s):
 
                     # 收取羊毛、使用卡片之后仍没有足够余额可以购买可抽奖商品价格上限的商品
                     if available_quota < limit_quota:
-                        print('羊毛不够了，请过段时间再来...')
+                        print('可用羊毛只有', available_quota, '羊毛不够抽高价商品，请过段时间再来...')
                         break
 
-                    # 获取商品信息，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
-                    item_list, min_price = collect_lottery_items_info(s, sign_list['cateConfs'])
-
-                    # 收取羊毛、使用卡片之后仍没有足够余额可以购买最低价格商品
-                    # if available_quota < min_price:
-                        # print('羊毛不够了，请过段时间再来...')
-                        # break
-
+                    retried = False
                     while True:
                         # 计算可抽奖商品价格上限
                         quota = available_quota
@@ -1256,17 +1410,25 @@ def on_ready(s):
 
                         # 搜索符合条件的商品
                         item = None
-                        while len(item_list) > 0:
+                        while (item_list is not None) and (len(item_list) > 0):
                             item = binary_search(item_list, quota)
-                            if not (item is None):
+                            if item is not None:
                                 item_list.remove(item)
                                 if item['salePrice'] <= quota:
                                     break
 
                         if item is None or item['salePrice'] > quota:
-                            print('没有符合抽奖条件的商品，当前商品列表中最低价商品价格：', min_price, '抽奖价格限额：', quota)
-                            break
+                            print('没有符合抽奖条件的商品，需要重新获取商品列表, 抽奖价格限额：', quota, '搜索出的商品信息：', item)
+                            if retried:
+                                break
 
+                            retried = True
+
+                            # 获取商品信息，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
+                            item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
+                            continue
+
+                        retried = False
                         print('开始抽奖，可抽奖商品价格上限：', quota, '商品为：', item['title'], '价格：', item['salePrice'])
 
                         lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
@@ -1286,7 +1448,6 @@ def on_ready(s):
                             and 'limitQuota' in sheep_info):
                             available_quota = float(sheep_info['availableQuota']) # 目前可用来抽奖的羊毛数
                             limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
-
                 else:
                     print('获取绵羊信息有误！', sheep_info)
                     break
@@ -1305,17 +1466,15 @@ def on_ready(s):
             for prop in prop_ret['propVoList']:
                 if 'desc' in prop and 'type' in prop:
                     re_ret = re.search('活动参与次数\\+(\\d+)', prop['desc'])
-                    if not (re_ret is None):
+                    if re_ret is not None:
                         print('使用一张', prop['desc'], '卡片...')
                         use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
                         if ('success' in use_ret
                             and 'toastTxt' in use_ret
                             and use_ret['success']):
                             print(use_ret['toastTxt'])
-                        elif ('success' in use_ret
-                            and 'errorMsg' in use_ret
-                            and not use_ret['success']):
-                            print(use_ret['errorMsg'])
+                        elif 'errorMsg' in use_ret:
+                            print('卡片使用失败：', use_ret['errorMsg'])
                             break
                         else:
                             print('卡片使用失败！')
@@ -1345,7 +1504,7 @@ def on_ready(s):
                         and 'itemId' in item
                         and 'itemType' in item
                         and 'title' in item):
-                        if ('status' not in item) or not (item['status'] == 'FINISHED'):
+                        if ('status' not in item) or (item['status'] != 'FINISHED'):
                             status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
                             if 'userPropNum' in status_info:
                                 user_prop_num = int(status_info['userPropNum'])

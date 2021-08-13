@@ -1357,7 +1357,7 @@ def on_ready(s):
                         else:
                             print('收取羊毛失败！')
 
-                    if available_quota + available_wool < limit_quota: # 如果当前拥有的羊毛比可抽奖商品价格上限少，尝试自动使用羊毛卡
+                    if available_quota < total_quota: # 如果当前拥有的羊毛比储存上限少，尝试自动使用羊毛卡
                         print('尝试自动使用羊毛卡...')
                         prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
                         if 'propVoList' in prop_ret:

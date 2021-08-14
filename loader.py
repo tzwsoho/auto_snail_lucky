@@ -40,10 +40,6 @@ pid = 0
     # pid = device.spawn('com.snail.android.lucky')
     # device.resume(pid)
 
-app = device.get_frontmost_application()
-if app is not None:
-    pid = app.pid
-
 # app = device.get_frontmost_application()
 # if app is not None:
     # pid = app.pid

@@ -21,7 +21,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 #################################################################################################################################################
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-client_version = '3.5.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+client_version = '3.6.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
@@ -1404,9 +1404,9 @@ def on_ready(s):
                             quota = limit_quota
 
                         # 只对高价商品抽奖
-                        if quota < limit_quota:
-                            print('羊毛不够了...')
-                            break
+                        # if quota < limit_quota:
+                        #     print('羊毛不够了...')
+                        #     break
 
                         # 搜索符合条件的商品
                         item = None

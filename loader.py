@@ -23,21 +23,25 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 client_version = '3.6.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
+request_interval = 0.1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
 
 device = frida.get_usb_device()
 pid = 0
 
-for snail_lucky in device.enumerate_processes():
-    if snail_lucky.name.find('几羊') >= 0:
-        pid = snail_lucky.pid
-        break
+# for snail_lucky in device.enumerate_processes():
+    # if snail_lucky.name.find('几羊') >= 0:
+        # pid = snail_lucky.pid
+        # break
 
-if pid == 0:
-    pid = device.spawn('com.snail.android.lucky')
-    device.resume(pid)
+# if pid == 0:
+    # pid = device.spawn('com.snail.android.lucky')
+    # device.resume(pid)
+
+app = device.get_frontmost_application()
+if app is not None:
+    pid = app.pid
 
 # app = device.get_frontmost_application()
 # if app is not None:
@@ -1411,16 +1415,16 @@ def on_ready(s):
                             print('没有找到羊毛卡...')
 
                     # 收取羊毛、使用卡片之后仍没有足够余额可以购买可抽奖商品价格上限的商品
-                    if available_quota < limit_quota:
-                        print('可用羊毛只有', available_quota, '羊毛不够抽高价商品，请过段时间再来...')
-                        break
+                    # if available_quota < limit_quota:
+                    #     print('可用羊毛只有', available_quota, '羊毛不够抽高价商品，请过段时间再来...')
+                    #     break
 
                     retried = False
                     while True:
                         # 计算可抽奖商品价格上限
-                        quota = available_quota
-                        if available_quota > limit_quota:
-                            quota = limit_quota
+                        # quota = available_quota
+                        # if available_quota > limit_quota:
+                        #     quota = limit_quota
 
                         # 只对高价商品抽奖
                         if quota < limit_quota:
@@ -1429,16 +1433,21 @@ def on_ready(s):
 
                         # 搜索符合条件的商品
                         item = None
-                        while (item_list is not None) and (len(item_list) > 0):
-                            item = binary_search(item_list, quota)
-                            if item is not None:
-                                item_list.remove(item)
-                                if item['salePrice'] <= quota:
-                                    break
+                        # while (item_list is not None) and (len(item_list) > 0):
+                        #     item = binary_search(item_list, quota)
+                        #     if item is not None:
+                        #         item_list.remove(item)
+                        #         if item['salePrice'] <= quota:
+                        #             break
 
-                        if item is None or item['salePrice'] > quota:
-                            print('没有符合抽奖条件的商品，需要重新获取商品列表, 抽奖价格限额：', quota, '搜索出的商品信息：', item)
+                        if item_list is not None and len(item_list) > 0:
+                            item = item_list[0]
+                            item_list.remove(item)
+
+                        if item is None:
+                            print('没有符合抽奖条件的商品！')
                             if retried:
+                                item_list = None
                                 break
 
                             retried = True
@@ -1446,9 +1455,12 @@ def on_ready(s):
                             # 获取商品信息，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
                             item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
                             continue
+                        elif item['salePrice'] > available_quota:
+                            print('羊毛不足！')
+                            break
 
                         retried = False
-                        print('开始抽奖，可抽奖商品价格上限：', quota, '商品为：', item['title'], '价格：', item['salePrice'])
+                        print('开始抽奖', '商品为：', item['title'], '价格：', item['salePrice'], '剩余可用羊毛：', available_quota)
 
                         lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
                         if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇

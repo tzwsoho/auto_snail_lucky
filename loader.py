@@ -997,7 +997,7 @@ def collect_lottery_items_info(s, cate_confs):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_lottery_pages = 5 # 每个分类获取 5 页数据
+        max_lottery_pages = 10 # 每个分类获取 10 页数据
 
         for page in range(1, max_lottery_pages + 1):
             print('正在获取分类', titles[i], '下第', page, '/', max_lottery_pages, '页商品信息，已获取到', len(items), '件商品信息...')
@@ -1419,6 +1419,11 @@ def on_ready(s):
                     #     print('可用羊毛只有', available_quota, '羊毛不够抽高价商品，请过段时间再来...')
                     #     break
 
+                    # 收取羊毛、使用卡片之后仍没有足够余额可以购买最低价商品
+                    if item_list is not None and len(item_list) > 0 and available_quota < item_list[0]['salePrice']:
+                        print('可用羊毛只有', available_quota, '羊毛不够抽最低价格商品，请过段时间再来...')
+                        break
+
                     retried = False
                     while True:
                         # 计算可抽奖商品价格上限
@@ -1491,25 +1496,26 @@ def on_ready(s):
     while True:
         print('开始参加组团抽奖活动...')
 
+        # 新版本的活动参与次数卡的数量就是剩余抽奖次数
         # print('尝试自动使用活动参与次数卡...')
         # prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
         # if 'propVoList' in prop_ret:
-            # for prop in prop_ret['propVoList']:
-                # if 'desc' in prop and 'type' in prop:
-                    # re_ret = re.search('活动参与次数\\+(\\d+)', prop['desc'])
-                    # if re_ret is not None:
-                        # print('使用一张', prop['desc'], '卡片...')
-                        # use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
-                        # if ('success' in use_ret
-                            # and 'toastTxt' in use_ret
-                            # and use_ret['success']):
-                            # print(use_ret['toastTxt'])
-                        # elif 'errorMsg' in use_ret:
-                            # print('卡片使用失败：', use_ret['errorMsg'])
-                            # break
-                        # else:
-                            # print('卡片使用失败！')
-                            # break
+        #     for prop in prop_ret['propVoList']:
+        #         if 'desc' in prop and 'type' in prop:
+        #             re_ret = re.search('活动参与次数\\+(\\d+)', prop['desc'])
+        #             if re_ret is not None:
+        #                 print('使用一张', prop['desc'], '卡片...')
+        #                 use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
+        #                 if ('success' in use_ret
+        #                     and 'toastTxt' in use_ret
+        #                     and use_ret['success']):
+        #                     print(use_ret['toastTxt'])
+        #                 elif 'errorMsg' in use_ret:
+        #                     print('卡片使用失败：', use_ret['errorMsg'])
+        #                     break
+        #                 else:
+        #                     print('卡片使用失败！')
+        #                     break
 
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if ('duplicateActivityVos' in sign_list

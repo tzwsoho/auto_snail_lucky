@@ -13,6 +13,7 @@ import _thread
 import requests
 import traceback
 import functools
+import webbrowser
 import urllib.parse
 
 import urllib3
@@ -917,7 +918,7 @@ def alipay_mobile_aggrbillinfo_message_box_list(s, page_no, page_size):
 
 # [{"activityId":"2021080300805830300","apdid":"eYOIkqXXI47JWb8cn6D0oxaU6hpIwTEZaRVOVsJYT4PVrbuCEep0RQBG","clientKey":"IBdxM1u3SL","clientVersion":"3.4.0.69","model":"NX563J","platform":"Android","token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 打开消息获取详情
-# 
+# {"activityId":"2021081800940906900","activityName":"20210818期-万人团","activityType":"TEN_THOUSAND","discountRecords":[],"failRecordsNew":[{"gmtPart":1629285243000,"groupId":"2021081800114554660","item":{"centPrice":"1000000","discount":"0","expireFlag":false,"itemId":"s0000004","itemSource":"淘宝","itemType":"SPECIFIC_GOODS_2","pictUrl":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*HLHvSImvR48AAAAAAAAAAAAAARQnAQ","salePrice":"10000","subTitle":" 一人中奖，3万人瓜分","title":"100,000,000羊奶","whiteImage":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*HLHvSImvR48AAAAAAAAAAAAAARQnAQ"},"lotteryCode":"7214070","lotteryCodeVoList":[{"content":"1","icon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*-wUKTbPN9tUAAAAAAAAAAAAAARQnAQ","lotteryCode":"7214070","source":"OWN","status":"FAIL","userId":"8088015060932312"}],"numberText":"（第01387团）组团未中奖","recordId":"2021081804595872631","userShowInfoVo":{"avatar":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*_F64TaCS-wgAAAAAAAAAAABkARQnAQ","cancelRelationFlag":false,"nickName":"聪明的灯泡","officialLabel":"NORMAL","userId":"8088015060932312"}},{"gmtPart":1629285232000,"groupId":"2021081800114554760","item":{"centPrice":"1000000","discount":"0","expireFlag":false,"itemId":"s0000003","itemSource":"淘宝","itemType":"SPECIFIC_GOODS_2","pictUrl":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*cyL0T4kWn68AAAAAAAAAAAAAARQnAQ","salePrice":"10000","subTitle":" 一人中奖，2万人瓜分","title":"100,000,000羊奶","whiteImage":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*cyL0T4kWn68AAAAAAAAAAAAAARQnAQ"},"lotteryCode":"9749641","lotteryCodeVoList":[{"content":"1","icon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*-wUKTbPN9tUAAAAAAAAAAAAAARQnAQ","lotteryCode":"9749641","source":"OWN","status":"FAIL","userId":"8088015060932312"}],"numberText":"（第01388团）组团未中奖","recordId":"2021081804586249631","userShowInfoVo":{"avatar":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*_F64TaCS-wgAAAAAAAAAAABkARQnAQ","cancelRelationFlag":false,"nickName":"聪明的灯泡","officialLabel":"NORMAL","userId":"8088015060932312"}}],"hasOwn":true,"idem":false,"lotteryOpenDetailRedEnvelopeVo":{"activityId":"2021081800940906900","activityLabel":"1万人组团抽奖","avatarList":["https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*b3bXSIaX-5EAAAAAAAAAAABkARQnAQ","https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*VAB_SYvBl5sAAAAAAAAAAABkARQnAQ","https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*-7ifTZk19W4AAAAAAAAAAABkARQnAQ","http://tfs.alipayobjects.com/images/partner/TB1SUnSanVyDuNk6XeaXXXCWXXa"],"gmtPart":1629283724000,"groupId":"2021081800123930760","groupName":"（第01390团）","itemId":"s0000002","itemType":"SPECIFIC_GOODS_2","lotteryCodeVoList":[{"content":"1","icon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*-wUKTbPN9tUAAAAAAAAAAAAAARQnAQ","lotteryCode":"4407577","source":"OWN","status":"SUCCESS","userId":"8088000095460173"}],"numberText":"9999人组团中奖，瓜分100,000,000羊奶","pictUrl":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*qcs8TrUlJygAAAAAAAAAAAAAARQnAQ","salePrice":"10000","subTitle":" 一人中奖，1万人瓜分","title":"100,000,000羊奶","userVoList":[{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*giR6QpI4NtgAAAAAAAAAAAAADsZ1AA/original?t=rGX_0mHpchkx0u9aY18QaAAAAABkdcYAAAAA","canPickLuck":false,"gmtPart":1629283724000,"lotteryCode":"4407577","lotteryRecordId":"2021081804536336317","luckyType":"PERSON_SIMILAR","nickName":"暗の韋小寶°","pickLucked":false,"userId":"8088000095460173","userShowInfoVo":{"avatar":"https://mdn.alipayobjects.com/snail_avatar/afts/img/A*giR6QpI4NtgAAAAAAAAAAAAADsZ1AA/original?t=rGX_0mHpchkx0u9aY18QaAAAAABkdcYAAAAA","cancelRelationFlag":false,"endColor":"#737E9A","latestMemberLevelIcon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*GtpkRqQBOncAAAAAAAAAAAAAARQnAQ","lotteryLabel":"","memberLevelIcon":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*hkKKRpOxZpMAAAAAAAAAAAAAARQnAQ","nickName":"暗の韋小寶°","officialLabel":"NORMAL","startColor":"#B0B8D0","userId":"8088000095460173"}}]},"luckTotalPerson":"10000","luckyCodeGenRuleUrl":"https://render.alipay.com/p/c/1835be0tdsu8","luckyDetail":{"luckyCode":"4407811","luckyComputeDetails":[{"city":"北京","done":true,"gmtCompute":1629327984511,"idx":"1.14","idxCode":"4","order":0,"originIdx":"1.14"},{"city":"上海","done":true,"gmtCompute":1629327984511,"idx":"1.14","idxCode":"4","order":1,"originIdx":"1.14"},{"city":"广州","done":true,"gmtCompute":1629327984511,"idx":"1.10","idxCode":"0","order":2,"originIdx":"1.1"},{"city":"杭州","done":true,"gmtCompute":1629327984511,"idx":"1.17","idxCode":"7","order":3,"originIdx":"1.17"},{"city":"武汉","done":true,"gmtCompute":1629327984511,"idx":"1.08","idxCode":"8","order":4,"originIdx":"1.08"},{"city":"成都","done":true,"gmtCompute":1629327984511,"idx":"1.11","idxCode":"1","order":5,"originIdx":"1.11"},{"city":"郑州","done":true,"gmtCompute":1629327984511,"idx":"1.11","idxCode":"1","order":6,"originIdx":"1.11"}]},"noticeContent":"部分区域疫情影响物流停发通知,查看详情>>>","noticeUrl":"https://render.alipay.com/p/c/181sgrrosmn4","openCodeRuleStr":"今日6点各城市拥堵延时指数","openDetailStatus":"END_OPEN","openRuleUrl":"https://render.alipay.com/p/c/1835be0tdsu8","openTime":1629331200000,"success":true,"successRecords":[{"awardExpireTime":1629763200000,"gmtPart":1629285254000,"groupId":"2021081800123930760","item":{"centPrice":"1000000","discount":"0","expireFlag":false,"itemId":"s0000002","itemSource":"淘宝","itemType":"SPECIFIC_GOODS_2","pictUrl":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*qcs8TrUlJygAAAAAAAAAAAAAARQnAQ","salePrice":"10000","subTitle":" 一人中奖，1万人瓜分","title":"100,000,000羊奶","whiteImage":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*qcs8TrUlJygAAAAAAAAAAAAAARQnAQ"},"lotteryCode":"5056011","lotteryCodeVoList":[{"content":"1","icon":"https://gw.alipayobjects.com/mdn/rms_5b9989/afts/img/A*-wUKTbPN9tUAAAAAAAAAAAAAARQnAQ","lotteryCode":"5056011","source":"OWN","status":"SUCCESS","userId":"8088015060932312"}],"numberText":"（第01390团）组团中奖，瓜分100000000羊奶","recordId":"2021081804590126531","status":"SUCCESS","type":"GROUP","userShowInfoVo":{"avatar":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*_F64TaCS-wgAAAAAAAAAAABkARQnAQ","cancelRelationFlag":false,"nickName":"聪明的灯泡","officialLabel":"NORMAL","userId":"8088015060932312"}}],"systemTime":1629338367134}
 def alipay_mobile_aggrbillinfo_lottery_record_open_detail(s, activity_id):
     operation_type = 'alipay.mobile.aggrbillinfo.lottery.record.open.detail'
     base_info = json.loads(s.exports.get_rpc_base_info())
@@ -1290,12 +1291,26 @@ def on_ready(s):
                     try:
                         ext_info = json.loads(msg['extInfo'])
                         if 'activityId' in ext_info:
+                            opened = False
                             open_ret = alipay_mobile_aggrbillinfo_lottery_record_open_detail(s, ext_info['activityId'])
-                            if 'luckyDogsNew' in open_ret:
-                                for lucky_dog in open_ret['luckyDogsNew']:
-                                    if ('propsGiftBox' in lucky_dog
-                                        and 'giftBoxId' in lucky_dog['propsGiftBox']):
-                                        open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
+                            if 'successRecords' in open_ret:
+                                for record in open_ret['successRecords']:
+                                    if 'status' in record and record['status'] == 'SUCCESS' and not opened:
+                                        opened = True
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
+                                        print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
+
+                            for field in [ 'luckyDogsNew', 'lotteryOpenDetailRedEnvelopeVo' ]:
+                                if field in open_ret:
+                                    for lucky_dog in open_ret[field]:
+                                        if ('propsGiftBox' in lucky_dog
+                                            and 'giftBoxId' in lucky_dog['propsGiftBox']):
+                                            open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
+
+                                    break
                     except Exception:
                         traceback.print_exc()
                         print('!' * 120, '\n', msg['extInfo'], '\n' + '!' * 120)

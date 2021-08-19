@@ -1302,7 +1302,7 @@ def on_ready(s):
                                     if 'status' in record and record['status'] == 'SUCCESS' and not opened:
                                         opened = True
                                         print('*' * 120 + '\n' + '*' * 120)
-                                        print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
+                                        print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持，点个 Star 吧！！！' + '*' * 5)
                                         print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
                                         print('*' * 120 + '\n' + '*' * 120)
                                         webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
@@ -1422,7 +1422,10 @@ def on_ready(s):
                     # 收取羊毛、使用卡片之后仍没有足够余额可以购买最低价商品
                     if item_list is not None and len(item_list) > 0 and available_quota < item_list[0]['salePrice']:
                         print('可用羊毛只有', available_quota, '羊毛不够抽最低价格商品，请过段时间再来...')
-                        break
+
+                        # 获取商品信息，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
+                        item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
+                        continue
 
                     retried = False
                     while True:
@@ -1461,7 +1464,7 @@ def on_ready(s):
                             item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
                             continue
                         elif item['salePrice'] > available_quota:
-                            print('羊毛不足！')
+                            print('羊毛不足！', item_list)
                             break
 
                         retried = False

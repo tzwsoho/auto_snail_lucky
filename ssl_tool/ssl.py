@@ -6,14 +6,18 @@ import gzip
 device = frida.get_usb_device()
 pid = 0
 
-for snail_lucky in device.enumerate_processes():
-    if snail_lucky.name.find('几羊') >= 0:
-        pid = snail_lucky.pid
-        break
+# for snail_lucky in device.enumerate_processes():
+#     if snail_lucky.name.find('几羊') >= 0:
+#         pid = snail_lucky.pid
+#         break
 
-if pid == 0:
-    pid = device.spawn('com.snail.android.lucky')
-    device.resume(pid)
+# if pid == 0:
+#     pid = device.spawn('com.snail.android.lucky')
+#     device.resume(pid)
+
+app = device.get_frontmost_application()
+if app is not None:
+    pid = app.pid
 
 if pid == 0:
     os._exit(0)

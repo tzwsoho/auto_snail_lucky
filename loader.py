@@ -1629,9 +1629,10 @@ def on_ready(s):
             tab_list = alipay_mobile_aggrbillinfo_duplicate_tab(s, duplicate_activity_type, 1, 100)
             if 'userPropNum' in tab_list and 'indexItemVoList' in tab_list:
                 user_prop_num = int(tab_list['userPropNum'])
-                if user_prop_num > 0: # 抽奖次数足够
-                    i = 0
-                    while True:
+                if user_prop_num <= 0:
+                    print('抽奖次数不足！')
+                else:
+                    for i in range(0, len(tab_list['indexItemVoList'])):
                         item = tab_list['indexItemVoList'][i]
                         if ('activityId' in item
                             and 'itemId' in item
@@ -1655,12 +1656,6 @@ def on_ready(s):
                                             '抽奖幸运号码：', lottery_ret['lotteryCode'])
                         else:
                             print('商品信息有误：', item)
-
-                        i += 1
-                        if i >= len(tab_list['indexItemVoList']):
-                            break
-                else:
-                    print('抽奖次数不足！')
         else:
             print('目前没有正在进行的组团抽奖活动！')
 

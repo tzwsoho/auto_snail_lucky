@@ -1312,7 +1312,7 @@ def on_ready(s):
                     and 'needFeedTimes' in feed_ret):
                     need_feed_times = int(feed_ret['needFeedTimes'])
                     available_fodder = int(feed_ret['availableFodder'])
-                    print('喂', (feed_fodder // 10), '次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
+                    print('喂', (feed_fodder // 100), '次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
                 elif 'errorMsg' in feed_ret:
                     print('喂羊失败：', feed_ret['errorMsg'])
                     break

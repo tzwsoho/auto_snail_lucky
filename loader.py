@@ -1,4 +1,5 @@
-#-*-coding:utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import re
 import os
@@ -976,6 +977,70 @@ def open_box(s, box_id):
                 print('抽得卡片：' + box['cardDesc'])
                 break
 
+def prepare_wool(s):
+    available_quota = float(0) # 目前可用来抽奖的羊毛数
+    limit_quota = float(0) # 可抽奖商品价格上限
+
+    sheep_info = alipay_mobile_aggrbillinfo_sheep_info(s)
+    if ('availableQuota' in sheep_info
+        and 'totalQuota' in sheep_info
+        and 'limitQuota' in sheep_info
+        and 'availableWool' in sheep_info):
+        available_quota = float(sheep_info['availableQuota'])
+        limit_quota = float(sheep_info['limitQuota'])
+
+        total_quota = float(sheep_info['totalQuota'])
+        available_wool = float(sheep_info['availableWool'])
+
+        print('当前可用来抽奖的羊毛：', available_quota, '可收取羊毛：', available_wool, '可抽奖商品价格上限：', limit_quota)
+
+        if (available_quota < limit_quota
+            and available_wool > 0): # 当前用来抽奖的羊毛比可抽奖商品价格上限少，可以先收取羊毛
+            print('开始自动收取', (available_wool if available_wool < total_quota - available_quota else total_quota - available_quota), '羊毛...')
+            wool_ret = alipay_mobile_aggrbillinfo_sheep_wool_collect(s)
+            if ('success' in wool_ret and wool_ret['success']
+                and 'availableQuota' in wool_ret):
+                available_quota = float(wool_ret['availableQuota'])
+            elif 'errorMsg' in wool_ret:
+                print('收取羊毛失败：', wool_ret['errorMsg'])
+            else:
+                print('收取羊毛失败！')
+
+        if available_quota < total_quota: # 如果当前拥有的羊毛比储存上限少，尝试自动使用羊毛卡
+            print('尝试自动使用羊毛卡...')
+            prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
+            if 'propVoList' in prop_ret:
+                card_used = False
+                for prop in prop_ret['propVoList']:
+                    if 'desc' in prop and 'type' in prop:
+                        re_ret = re.search('羊毛\\+(\\d+)', prop['desc'])
+                        if re_ret is not None:
+                            wool = int(re_ret.group(1))
+                            if available_quota + wool > total_quota: # 已经达到羊毛最大储存限额
+                                continue # 有可能还可以使用较小额的羊毛卡
+
+                            print('使用一张', prop['desc'], '卡片...')
+                            use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
+                            if ('success' in use_ret
+                                and 'toastTxt' in use_ret
+                                and use_ret['success']):
+                                print(use_ret['toastTxt'])
+
+                                card_used = True
+                                available_quota += wool
+                            elif 'errorMsg' in use_ret:
+                                print('卡片使用失败：', use_ret['errorMsg'])
+                                break
+                            else:
+                                print('卡片使用失败！')
+                                break
+
+                if card_used: # 使用卡片后重新获取绵羊信息
+                    return prepare_wool(s)
+
+                print('没有找到羊毛卡...')
+    return available_quota, limit_quota
+
 def collect_lottery_items_info(s, cate_confs):
     # 收集分类参数
     titles = list()
@@ -1056,6 +1121,63 @@ def collect_lottery_items_info(s, cate_confs):
     print('已获取到共计', len(item_list), '件商品信息, 现在开始自动抽奖...')
 
     return item_list
+
+def lottery(s, item, available_quota):
+    if (item is None
+        or 'title' not in item
+        or 'salePrice' not in item
+        or 'activityId' not in item
+        or 'itemId' not in item
+        or 'itemType' not in item):
+        return
+
+    print('开始抽奖', '商品为：', item['title'], '价格：', item['salePrice'], '剩余可用羊毛：', available_quota)
+
+    lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
+    if ('success' in lottery_ret
+        and lottery_ret['success']
+        and 'lotteryRecordId' in lottery_ret): # 继续进行摇一摇
+        retries = 0
+        yaoyiyao_ret = None
+        
+        # 按几羊源码，每次间隔时间比上一次多 100ms，一共尝试 7 次
+        # com.snail.android.lucky.playbiz.ui.d.c$u -> a -> onResult -> run -> postDelayed
+        while (retries < 7
+            and (yaoyiyao_ret is None
+            or 'groupStatus' not in yaoyiyao_ret
+            or 'success' not in yaoyiyao_ret
+            or not yaoyiyao_ret['success']
+            or yaoyiyao_ret['groupStatus'] != 'GOING_GROUPED')):
+            yaoyiyao_ret = alipay_mobile_aggrbillinfo_group_yaoyiyao(s, lottery_ret['lotteryRecordId'])
+            time.sleep(0.1 * retries)
+            retries += 1
+
+        if (yaoyiyao_ret['success']
+            and 'groupRecords' in yaoyiyao_ret
+            and len(yaoyiyao_ret['groupRecords']) == 2
+            and 'lotteryCode' in yaoyiyao_ret['groupRecords'][0]
+            and 'lotteryCode' in yaoyiyao_ret['groupRecords'][1]):
+            print('已参加商品', item['title'], '的抽奖',
+                '抽奖幸运号码：', yaoyiyao_ret['groupRecords'][0]['lotteryCode'],
+                '摇一摇幸运号码：', yaoyiyao_ret['groupRecords'][1]['lotteryCode'])
+        elif 'errorMsg' in yaoyiyao_ret:
+            print('参与商品', item['title'], '的摇一摇失败：', yaoyiyao_ret['errorMsg'])
+        else:
+            print('参与商品', item['title'], '的摇一摇失败！')
+    elif 'errorMsg' in lottery_ret:
+        print('参与商品', item['title'], '的抽奖失败：', lottery_ret['errorMsg'])
+    else:
+        print('参与商品', item['title'], '的抽奖失败！')
+
+    # 刷新羊毛信息
+    limit_quota = float(0)
+    sheep_info = alipay_mobile_aggrbillinfo_sheep_info(s)
+    if ('availableQuota' in sheep_info
+        and 'limitQuota' in sheep_info):
+        available_quota = float(sheep_info['availableQuota']) # 目前可用来抽奖的羊毛数
+        limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
+
+    return available_quota, limit_quota
 
 def on_ready(s):
     while True:
@@ -1167,7 +1289,7 @@ def on_ready(s):
                         print('领取羊奶失败！')
                         break
 
-                if available_fodder <= 100: # 剩余饲料不够喂羊
+                if available_fodder < 100: # 剩余饲料不够喂羊
                     print('剩余饲料不足以喂羊！')
                     break
 
@@ -1175,36 +1297,24 @@ def on_ready(s):
                 if feed_times > need_feed_times:
                     feed_times = need_feed_times
 
-                if feed_times < 10:
-                    feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, 100)
-                    if ('success' in feed_ret
-                        and feed_ret['success']
-                        and 'availableFodder' in feed_ret
-                        and 'needFeedTimes' in feed_ret):
-                        need_feed_times = int(feed_ret['needFeedTimes'])
-                        available_fodder = int(feed_ret['availableFodder'])
-                        print('喂 1 次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
-                    elif 'errorMsg' in feed_ret:
-                        print('喂羊失败：', feed_ret['errorMsg'])
-                        break
-                    else:
-                        print('喂羊失败！')
-                        break
+                feed_fodder = 100
+                if feed_times >= 10:
+                    feed_fodder = 1000
+
+                feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, feed_fodder)
+                if ('success' in feed_ret
+                    and feed_ret['success']
+                    and 'availableFodder' in feed_ret
+                    and 'needFeedTimes' in feed_ret):
+                    need_feed_times = int(feed_ret['needFeedTimes'])
+                    available_fodder = int(feed_ret['availableFodder'])
+                    print('喂', (feed_fodder // 10), '次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
+                elif 'errorMsg' in feed_ret:
+                    print('喂羊失败：', feed_ret['errorMsg'])
+                    break
                 else:
-                    feed_ret = alipay_mobile_aggrbillinfo_sheep_feed(s, 1000)
-                    if ('success' in feed_ret
-                        and feed_ret['success']
-                        and 'availableFodder' in feed_ret
-                        and 'needFeedTimes' in feed_ret):
-                        need_feed_times = int(feed_ret['needFeedTimes'])
-                        available_fodder = int(feed_ret['availableFodder'])
-                        print('喂 10 次羊，当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
-                    elif 'errorMsg' in feed_ret:
-                        print('喂羊失败：', feed_ret['errorMsg'])
-                        break
-                    else:
-                        print('喂羊失败！')
-                        break
+                    print('喂羊失败！')
+                    break
 
                 if ('propsGiftBox' in feed_ret
                     and 'status' in feed_ret['propsGiftBox']
@@ -1217,24 +1327,26 @@ def on_ready(s):
                     available_fodder = int(feed_ret['availableFodder'])
                     print('当前还需要喂', need_feed_times, '次羊才能领羊奶，剩余饲料：', available_fodder)
 
+            # 兑换羊奶为现金
             withdraw_list = alipay_mobile_aggrbillinfo_withdraw_index(s)
             if ('goldNumStr' in withdraw_list
                 and 'activityInfos' in withdraw_list
                 and len(withdraw_list['activityInfos']) > 0):
+                # 当前持有的羊奶数量
                 gold_num = int(withdraw_list['goldNumStr'].replace(',', ''))
 
-                least_gold_num = 0
-                least_activity_type = None
+                most_gold_num = 0 # 兑换最高现金需要的羊奶数量
+                most_activity_type = None
                 for withdraw in withdraw_list['activityInfos']:
                     if ('goldNum' in withdraw
                         and 'activityType' in withdraw
-                        and least_gold_num <= withdraw['goldNum']
+                        and most_gold_num <= withdraw['goldNum']
                         and gold_num >= withdraw['goldNum']):
-                        least_gold_num = withdraw['goldNum']
-                        least_activity_type = withdraw['activityType']
+                        most_gold_num = withdraw['goldNum']
+                        most_activity_type = withdraw['activityType']
 
-                if least_activity_type is not None:
-                    withdraw_ret = alipay_mobile_aggrbillinfo_withdraw_withdraw(s, least_activity_type)
+                if most_activity_type is not None:
+                    withdraw_ret = alipay_mobile_aggrbillinfo_withdraw_withdraw(s, most_activity_type)
                     if ('success' in withdraw_ret
                         and withdraw_ret['success']
                         and 'topText' in withdraw_ret
@@ -1283,39 +1395,101 @@ def on_ready(s):
     while True:
         print('查看开奖消息并沾好运...')
 
+        opened = False
         msg_list = alipay_mobile_aggrbillinfo_message_box_list(s, 1, 20)
         if 'messageInfos' in msg_list:
             for msg in msg_list['messageInfos']:
                 if 'messageId' in msg and 'extInfo' in msg:
                     print('正在查看 ID 为', msg['messageId'], '的开奖消息并沾好运...')
+                    ext_info = dict()
                     try:
                         ext_info = json.loads(msg['extInfo'])
-                        if 'activityId' in ext_info:
-                            opened = False
-                            open_ret = alipay_mobile_aggrbillinfo_lottery_record_open_detail(s, ext_info['activityId'])
-                            if 'successRecords' in open_ret:
-                                for record in open_ret['successRecords']:
-                                    if 'status' in record and record['status'] == 'SUCCESS' and not opened:
-                                        opened = True
-                                        print('*' * 120 + '\n' + '*' * 120)
-                                        print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
-                                        print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
-                                        print('*' * 120 + '\n' + '*' * 120)
-                                        webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
-
-                            for field in [ 'luckyDogsNew', 'lotteryOpenDetailRedEnvelopeVo' ]:
-                                if field in open_ret:
-                                    for lucky_dog in open_ret[field]:
-                                        if ('propsGiftBox' in lucky_dog
-                                            and 'giftBoxId' in lucky_dog['propsGiftBox']):
-                                            open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
-
-                                    break
                     except Exception:
                         traceback.print_exc()
                         print('!' * 120, '\n', msg['extInfo'], '\n' + '!' * 120)
+                        continue
+
+                    if 'activityId' in ext_info:
+                        open_ret = alipay_mobile_aggrbillinfo_lottery_record_open_detail(s, ext_info['activityId'])
+                        if 'successRecords' in open_ret:
+                            for record in open_ret['successRecords']:
+                                if 'status' in record and record['status'] == 'SUCCESS' and not opened:
+                                    opened = True
+                                    print('*' * 120 + '\n' + '*' * 120)
+                                    print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
+                                    print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                    print('*' * 120 + '\n' + '*' * 120)
+                                    webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
+
+                        if 'luckyDogsNew' in open_ret:
+                            for lucky_dog in open_ret['luckyDogsNew']:
+                                if ('propsGiftBox' in lucky_dog
+                                    and 'giftBoxId' in lucky_dog['propsGiftBox']):
+                                    open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
+                        elif ('lotteryOpenDetailRedEnvelopeVo' in open_ret
+                            and 'userVoList' in open_ret['lotteryOpenDetailRedEnvelopeVo']):
+                            for lucky_dog in open_ret['lotteryOpenDetailRedEnvelopeVo']['userVoList']:
+                                if ('propsGiftBox' in lucky_dog
+                                    and 'giftBoxId' in lucky_dog['propsGiftBox']):
+                                    open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
 
         print('已经完成查看开奖消息并沾好运！', '\n' + '*' * 120)
+        break
+
+    #################################################################################################################################################
+
+    while True:
+        print('开始每日抽满 500 次领最高 9000g 饲料...')
+
+        item_list = None
+        while True:
+            fodder_popup = alipay_mobile_aggrbillinfo_sheep_fodder_popup(s)
+            if ('canAcquireFodder' not in fodder_popup
+                or 'fodderNumStr' not in fodder_popup
+                or 'status' not in fodder_popup
+                or 'needLotteryCountStr' not in fodder_popup
+                or fodder_popup['needLotteryCountStr'] == ''
+                or int(fodder_popup['canAcquireFodder']) >= 9000):
+                break
+
+            fodder_toast = ''
+            if fodder_popup['status'] == 'CAN_ACQUIRE':
+                fodder_toast = '当前可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料！'
+            elif fodder_popup['status'] == 'NORMAL':
+                fodder_toast = '再抽奖 ' + fodder_popup['needLotteryCountStr'] + ' 次可领取 ' + fodder_popup['needLotteryCountStr'] + 'g 饲料！'
+            elif fodder_popup['status'] == 'MODULUS_TOP':
+                fodder_toast = '当前可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料，再抽奖 ' + \
+                    fodder_popup['needLotteryCountStr'] + ' 次可多领取 ' + fodder_popup['fodderNumStr'] + 'g 饲料！'
+            print(fodder_toast)
+
+            sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
+            if 'cateConfs' in sign_list:
+                # 准备足够羊毛并获取羊毛信息
+                available_quota, limit_quota = prepare_wool(s)
+                if available_quota > 0:
+                    need_lottery_count = 100
+                    if fodder_popup['status'] != 'MODULUS_TOP':
+                        need_lottery_count = int(fodder_popup['needLotteryCountStr'])
+
+                    for _ in range(0, need_lottery_count):
+                        if item_list is None or len(item_list) <= 0:
+                            item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
+
+                        # 从最低价商品开始抽奖
+                        item = item_list[0]
+                        item_list.remove(item)
+
+                        if item is None:
+                            break
+
+                        available_quota, limit_quota = lottery(s, item, available_quota)
+                        if available_quota <= 0:
+                            break
+                else:
+                    print('当前羊毛不足以抽奖，请过段时间再来...')
+                    break
+
+        print('已经完成每日抽满 500 次，明日可领最高 9000g 饲料！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################
@@ -1334,9 +1508,9 @@ def on_ready(s):
                 mid = left + (right - left) // 2
                 if lst[mid]['salePrice'] == quota:
                     break
-                elif lst[mid]['salePrice'] > quota: # 在左边搜索
+                elif lst[mid]['salePrice'] > quota: # 在较低价区搜索
                     right = mid - 1
-                elif lst[mid]['salePrice'] < quota: # 在右边搜索
+                elif lst[mid]['salePrice'] < quota: # 在较高价区搜索
                     left = mid + 1
 
             if lst[mid]['salePrice'] > quota and mid > 0:
@@ -1344,132 +1518,74 @@ def on_ready(s):
             else:
                 return lst[mid]
 
+        item_list = None
+
+        # 商品类型，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:
             # 开始抽奖
-            item_list = None
             while True:
-                # 获取绵羊信息
-                sheep_info = alipay_mobile_aggrbillinfo_sheep_info(s)
-                if ('availableQuota' in sheep_info
-                    and 'totalQuota' in sheep_info
-                    and 'limitQuota' in sheep_info
-                    and 'availableWool' in sheep_info):
-                    available_quota = float(sheep_info['availableQuota']) # 目前可用来抽奖的羊毛数
-                    total_quota = float(sheep_info['totalQuota']) # 可抽奖羊毛储存上限
-                    limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
-                    available_wool = float(sheep_info['availableWool']) # 目前可以收取的羊毛数
+                # 准备足够羊毛并获取羊毛信息
+                available_quota, limit_quota = prepare_wool(s)
 
-                    print('当前可用来抽奖的羊毛：', available_quota, '可收取羊毛：', available_wool, '可抽奖商品价格上限：', limit_quota)
+                # 收取羊毛、使用卡片之后仍不足以符合抽奖需求
+                if available_quota < limit_quota:
+                    print('可用羊毛只有', available_quota, '不够抽奖，请过段时间再来...')
+                    break
 
-                    if (available_quota < limit_quota
-                        and available_wool > 0): # 当前用来抽奖的羊毛比可抽奖商品价格上限少，可以先收取羊毛
-                        print('开始自动收取', (available_wool if available_wool < total_quota - available_quota else total_quota - available_quota), '羊毛...')
-                        wool_ret = alipay_mobile_aggrbillinfo_sheep_wool_collect(s)
-                        if ('success' in wool_ret and wool_ret['success']
-                            and 'availableQuota' in wool_ret
-                            and 'availableWool' in wool_ret):
-                            available_quota = float(wool_ret['availableQuota'])
-                            available_wool = float(wool_ret['availableWool'])
-                        elif 'errorMsg' in wool_ret:
-                            print('收取羊毛失败：', wool_ret['errorMsg'])
-                        else:
-                            print('收取羊毛失败！')
+                retried = False
+                while True:
+                    item = None
 
-                    if available_quota < total_quota: # 如果当前拥有的羊毛比储存上限少，尝试自动使用羊毛卡
-                        print('尝试自动使用羊毛卡...')
-                        prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
-                        if 'propVoList' in prop_ret:
-                            card_used = False
-                            for prop in prop_ret['propVoList']:
-                                if 'desc' in prop and 'type' in prop:
-                                    re_ret = re.search('羊毛\\+(\\d+)', prop['desc'])
-                                    if re_ret is not None:
-                                        wool = int(re_ret.group(1))
-                                        if available_quota + wool > total_quota: # 已经达到羊毛最大储存限额
-                                            continue # 有可能还可以使用较小额的羊毛卡
+                    # 获取商品列表
+                    if item_list is None or len(item_list) <= 0:
+                        item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
 
-                                        print('使用一张', prop['desc'], '卡片...')
-                                        use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
-                                        if ('success' in use_ret
-                                            and 'toastTxt' in use_ret
-                                            and use_ret['success']):
-                                            print(use_ret['toastTxt'])
+                    #########################################################################################################
+                    # 从最高可抽的商品开始抽奖
+                    #########################################################################################################
 
-                                            card_used = True
-                                            available_quota += wool
-                                        elif 'errorMsg' in use_ret:
-                                            print('卡片使用失败：', use_ret['errorMsg'])
-                                            break
-                                        else:
-                                            print('卡片使用失败！')
-                                            break
+                    # 计算可抽奖商品价格上限
+                    quota = available_quota
+                    if available_quota > limit_quota:
+                        quota = limit_quota
 
-                            if card_used: # 使用卡片后重新获取绵羊信息
-                                continue
+                    # 只对高价商品抽奖
+                    if quota < limit_quota:
+                        print('羊毛不够了...')
+                        break
 
-                            print('没有找到羊毛卡...')
+                    # 搜索符合条件的商品
+                    while (item_list is not None) and (len(item_list) > 0):
+                        item = binary_search(item_list, quota)
+                        if item is not None:
+                            item_list.remove(item)
+                            if item['salePrice'] <= quota:
+                                break
 
-                    # 收取羊毛、使用卡片之后仍没有足够余额可以购买可抽奖商品价格上限的商品
-                    if available_quota < limit_quota:
-                        print('可用羊毛只有', available_quota, '羊毛不够抽高价商品，请过段时间再来...')
+                    #########################################################################################################
+                    # 从最低价商品开始抽奖
+                    #########################################################################################################
+
+                    # item = item_list[0]
+                    # item_list.remove(item)
+
+                    #########################################################################################################
+
+                    if item is None:
+                        print('没有符合抽奖条件的商品！')
+                        if retried:
+                            item_list = None
+                            break
+
+                        retried = True
+                        continue
+                    elif item['salePrice'] > available_quota:
+                        print('羊毛不足！', item)
                         break
 
                     retried = False
-                    while True:
-                        # 计算可抽奖商品价格上限
-                        quota = available_quota
-                        if available_quota > limit_quota:
-                            quota = limit_quota
-
-                        # 只对高价商品抽奖
-                        if quota < limit_quota:
-                            print('羊毛不够了...')
-                            break
-
-                        # 搜索符合条件的商品
-                        item = None
-                        while (item_list is not None) and (len(item_list) > 0):
-                            item = binary_search(item_list, quota)
-                            if item is not None:
-                                item_list.remove(item)
-                                if item['salePrice'] <= quota:
-                                    break
-
-                        if item is None or item['salePrice'] > quota:
-                            print('没有符合抽奖条件的商品，需要重新获取商品列表, 抽奖价格限额：', quota, '搜索出的商品信息：', item)
-                            if retried:
-                                break
-
-                            retried = True
-
-                            # 获取商品信息，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
-                            item_list = collect_lottery_items_info(s, sign_list['cateConfs'])
-                            continue
-
-                        retried = False
-                        print('开始抽奖，可抽奖商品价格上限：', quota, '商品为：', item['title'], '价格：', item['salePrice'])
-
-                        lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
-                        if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
-                            yaoyiyao_ret = alipay_mobile_aggrbillinfo_group_yaoyiyao(s, lottery_ret['lotteryRecordId'])
-                            if ('groupRecords' in yaoyiyao_ret
-                                and len(yaoyiyao_ret['groupRecords']) == 1
-                                and 'lotteryCode' in lottery_ret
-                                and 'lotteryCode' in yaoyiyao_ret['groupRecords'][0]):
-                                print('已参加商品', item['title'], '的抽奖',
-                                    '抽奖幸运号码：', lottery_ret['lotteryCode'],
-                                    '摇一摇幸运号码：', yaoyiyao_ret['groupRecords'][0]['lotteryCode'])
-
-                        # 刷新羊毛信息
-                        sheep_info = alipay_mobile_aggrbillinfo_sheep_info(s)
-                        if ('availableQuota' in sheep_info
-                            and 'limitQuota' in sheep_info):
-                            available_quota = float(sheep_info['availableQuota']) # 目前可用来抽奖的羊毛数
-                            limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
-                else:
-                    print('获取绵羊信息有误！', sheep_info)
-                    break
+                    available_quota, limit_quota = lottery(s, item, available_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)
         break
@@ -1479,25 +1595,26 @@ def on_ready(s):
     while True:
         print('开始参加组团抽奖活动...')
 
+        # 新版本的活动参与次数卡的数量就是剩余抽奖次数
         # print('尝试自动使用活动参与次数卡...')
         # prop_ret = alipay_mobile_aggrbillinfo_sheep_prop_list(s)
         # if 'propVoList' in prop_ret:
-            # for prop in prop_ret['propVoList']:
-                # if 'desc' in prop and 'type' in prop:
-                    # re_ret = re.search('活动参与次数\\+(\\d+)', prop['desc'])
-                    # if re_ret is not None:
-                        # print('使用一张', prop['desc'], '卡片...')
-                        # use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
-                        # if ('success' in use_ret
-                            # and 'toastTxt' in use_ret
-                            # and use_ret['success']):
-                            # print(use_ret['toastTxt'])
-                        # elif 'errorMsg' in use_ret:
-                            # print('卡片使用失败：', use_ret['errorMsg'])
-                            # break
-                        # else:
-                            # print('卡片使用失败！')
-                            # break
+        #     for prop in prop_ret['propVoList']:
+        #         if 'desc' in prop and 'type' in prop:
+        #             re_ret = re.search('活动参与次数\\+(\\d+)', prop['desc'])
+        #             if re_ret is not None:
+        #                 print('使用一张', prop['desc'], '卡片...')
+        #                 use_ret = alipay_mobile_aggrbillinfo_props_card_use(s, 1, prop['type'])
+        #                 if ('success' in use_ret
+        #                     and 'toastTxt' in use_ret
+        #                     and use_ret['success']):
+        #                     print(use_ret['toastTxt'])
+        #                 elif 'errorMsg' in use_ret:
+        #                     print('卡片使用失败：', use_ret['errorMsg'])
+        #                     break
+        #                 else:
+        #                     print('卡片使用失败！')
+        #                     break
 
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if ('duplicateActivityVos' in sign_list
@@ -1512,47 +1629,38 @@ def on_ready(s):
             tab_list = alipay_mobile_aggrbillinfo_duplicate_tab(s, duplicate_activity_type, 1, 100)
             if 'userPropNum' in tab_list and 'indexItemVoList' in tab_list:
                 user_prop_num = int(tab_list['userPropNum'])
-                if user_prop_num <= 0: # 抽奖次数不足
+                if user_prop_num > 0: # 抽奖次数足够
+                    i = 0
+                    while True:
+                        item = tab_list['indexItemVoList'][i]
+                        if ('activityId' in item
+                            and 'itemId' in item
+                            and 'itemType' in item
+                            and 'title' in item):
+                            if ('status' not in item) or (item['status'] != 'FINISHED'):
+                                status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                                if 'userPropNum' in status_info:
+                                    user_prop_num = int(status_info['userPropNum'])
+                                    if user_prop_num <= 0:
+                                        print('抽奖次数已用完！')
+                                        break
+
+                                print('开始组团抽奖，剩余抽奖次数：', user_prop_num, '商品为', item['title'])
+                                lottery_ret = alipay_mobile_aggrbillinfo_duplicate_lottery(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                                if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
+                                    yaoyiyao_ret = alipay_mobile_aggrbillinfo_duplicate_group_yaoyiyao(s, item['activityId'], lottery_ret['lotteryRecordId'])
+                                    if 'memberTotal' in yaoyiyao_ret and 'lotteryCode' in lottery_ret:
+                                        print('已参加商品', item['title'], '的组团抽奖',
+                                            '组团人数：', yaoyiyao_ret['memberTotal'],
+                                            '抽奖幸运号码：', lottery_ret['lotteryCode'])
+                        else:
+                            print('商品信息有误：', item)
+
+                        i += 1
+                        if i >= len(tab_list['indexItemVoList']):
+                            break
+                else:
                     print('抽奖次数不足！')
-                    break
-
-                i = 0
-                while True:
-                    item = tab_list['indexItemVoList'][i]
-                    if ('activityId' in item
-                        and 'itemId' in item
-                        and 'itemType' in item
-                        and 'title' in item):
-                        if ('status' not in item) or (item['status'] != 'FINISHED'):
-                            status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
-                            if 'userPropNum' in status_info:
-                                user_prop_num = int(status_info['userPropNum'])
-                                if user_prop_num <= 0:
-                                    print('抽奖次数已用完！')
-                                    break
-
-                            print('开始组团抽奖，剩余抽奖次数：', user_prop_num, '商品为', item['title'])
-                            lottery_ret = alipay_mobile_aggrbillinfo_duplicate_lottery(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
-                            if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
-                                yaoyiyao_ret = alipay_mobile_aggrbillinfo_duplicate_group_yaoyiyao(s, item['activityId'], lottery_ret['lotteryRecordId'])
-                                if 'memberTotal' in yaoyiyao_ret and 'memberVoList' in yaoyiyao_ret:
-                                    base_info = json.loads(s.exports.get_rpc_base_info())
-                                    for yyy in yaoyiyao_ret['memberVoList']:
-                                        if ('userId' in yyy
-                                            and yyy['userId'] == base_info['userId']
-                                            and 'lotteryCode' in lottery_ret
-                                            and 'lotteryCode' in yyy):
-                                            print('已参加商品', item['title'], '的组团抽奖',
-                                                '组团人数：', yaoyiyao_ret['memberTotal'],
-                                                '抽奖幸运号码：', lottery_ret['lotteryCode'],
-                                                '摇一摇幸运号码：', yyy['lotteryCode'])
-                                            break
-                    else:
-                        print('商品信息有误：', item)
-
-                    i += 1
-                    if i >= len(tab_list['indexItemVoList']):
-                        break
         else:
             print('目前没有正在进行的组团抽奖活动！')
 

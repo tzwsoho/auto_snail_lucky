@@ -1543,8 +1543,6 @@ def on_ready(s):
             else:
                 return lst[mid]
 
-        item_list = None
-
         # 商品类型，可以修改 sign_list['cateConfs'] 实现只对某些类型的商品进行抽奖
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:

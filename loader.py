@@ -622,6 +622,34 @@ def alipay_mobile_aggrbillinfo_user_sign_list(s):
     return alipay_request(headers, request_data)
     # cateConfs 字段下为各分类信息
 
+# [{"appName":"","appVersion":"3.1.0","bizType":"GOODS","clientKey":"fO1IrEE4dh","clientVersion":"3.6.1.0","idfa":"","memberUserId":"","pageNo":1,"pageSize":10,"platform":"h5","token":"ff4386454e90ff20a8079b935c260b9b","userId":"8088028700051259","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 获取个人商品收藏列表
+# {"activityId":"2021083101028911600","goodsCollectVoList":[{"bizType":"GOODS","expireFlag":false,"favoriteId":"2021083102770984125","goodsSource":"TAOBAO","itemId":"629047439813","itemImage":"https://img.alicdn.com/bao/uploaded/i4/6000000006157/O1CN01YuZ3RI1vLxDLxQ34X_!!6000000006157-0-yinhe.jpg","itemName":"【24期免息】apple /苹果ipad芯片","itemPrice":"6099.00","lotteryUserCount":7854507,"userId":"8088028700051259"},{"bizType":"GOODS","expireFlag":false,"favoriteId":"2021083102769550025","goodsSource":"TAOBAO","itemId":"627255121141","itemImage":"https://img.alicdn.com/bao/uploaded/i2/3079263591/O1CN01lbvcTx1cOiyUbzpyt_!!2-item_pic.png","itemName":"gree /格力kfr-26gw大1匹新空调","itemPrice":"2599.00","lotteryUserCount":7176897,"userId":"8088028700051259"}],"idem":false,"success":true}
+def alipay_mobile_aggrbillinfo_goods_querycollect(s, page_no, page_size):
+    operation_type = 'alipay.mobile.aggrbillinfo.goods.querycollect'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'appName': '',
+        'appVersion': app_version,
+        'bizType': 'GOODS',
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'memberUserId': '',
+        'pageNo': page_no,
+        'pageSize': page_size,
+        'platform': 'h5',
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
 # [{"apdid":"eYOIkqXXI47JWb8cn6D0oxaU6hpIwTEZaRVOVsJYT4PVrbuCEep0RQBG","clientKey":"IBdxM1u3SL","clientVersion":"3.4.0.69","model":"NX563J","pageNo":2,"pageSize":20,"paramStr":"{\"materialId\": \"6708\"}","platform":"Android","remainTime":72,"token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 获取抽奖大厅列表
 # {"duplicateActivityVos":[{"activityIcon1":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*W9nXSZAfv1QAAAAAAAAAAAAAARQnAQ","activityIcon2":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*bsxbSrx-xmgAAAAAAAAAAAAAARQnAQ","activityName":"千人团进行中","activityStatus":"INIT","activityStatusText":"进行中","activityType":"THOUSAND","backGroupImg":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*hzL8RJ-NeSAAAAAAAAAAAAAAARQnAQ","context":"千人组团","currentLocation":true,"dateStr":"今日","endTime":1628071200000,"itemInfoList":[{"groupNum":1300,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01neVnhF1ri9zEKXR75_!!2208161825664-0-cib.jpg_350x350.jpg"},{"groupNum":1300,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01aomRpl2JEDM10QjYz_!!2200778929389-0-cib.jpg_350x350.jpg"},{"groupNum":1200,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01eMsyp41L4iBv2okr4_!!2410081246-0-cib.jpg_350x350.jpg"}],"openTime":1628078400000,"priority":1,"prizeText":"已有197787人中奖","ruleUrl":"https://render.alipay.com/p/c/18357y4lalr4","startTime":1628053200000,"timeStr":"13:00"}],"idem":false,"itemVoList":[{"activityId":"2021080400816262800","afterButtonText":"已参与","basePrice":0,"beforeButtonText":"免费抽奖","expireFlag":false,"itemId":"536454755630","itemNum":0,"itemType":"TBK_GOODS","lotteryPersonText":"累计608人参与抽奖","needPropNum":0,"participateCount":608,"pictUrl":"https://img.alicdn.com/bao/uploaded/i3/1611893164/O1CN01ClgGJ01ZF9l974Cqu_!!0-item_pic.jpg_350x350.jpg","price":0,"salePrice":"79.00","status":"INIT","title":"㊙赤豪澳洲家庭儿童牛排套餐10刀叉","tmallBrandName":"赤豪食品","volume":22,"whiteImage":"https://img.alicdn.com/bao/uploaded/TB1Av3WOsfpK1RjSZFOSuu6nFXa.jpg_350x350.jpg"},{"activityId":"2021080400816262800","afterButtonText":"已参与","basePrice":0,"beforeButtonText":"免费抽奖","expireFlag":false,"itemId":"545009700223","itemNum":0,"itemType":"TBK_GOODS","lotteryPersonText":"累计1085人参与抽奖","needPropNum":0,"participateCount":1085,"pictUrl":"https://img.alicdn.com/bao/uploaded/i2/2780830659/O1CN01EGNvay1GjrgeICkdR_!!2780830659.jpg_350x350.jpg","price":0,"salePrice":"16.80","status":"INIT","title":"男士秋裤单...
@@ -1303,7 +1331,7 @@ def on_ready(s):
                         print('领取羊奶失败！')
                         break
 
-                if available_fodder < 100: # 剩余饲料不够喂羊
+                if available_fodder < 200: # 留一次喂羊机会用来雇佣打工
                     print('剩余饲料不足以喂羊！')
                     break
 
@@ -1461,6 +1489,46 @@ def on_ready(s):
                                     open_box(s, lucky_dog['propsGiftBox']['giftBoxId'])
 
         print('已经完成查看开奖消息并沾好运！', '\n' + '*' * 120)
+        break
+
+    #################################################################################################################################################
+
+    while True:
+        print('开始对个人收藏的商品进行抽奖...')
+
+        page = 1
+
+        # 准备足够羊毛并获取羊毛信息
+        available_quota, limit_quota = prepare_wool(s)
+        while available_quota > 0:
+            collection_ret = alipay_mobile_aggrbillinfo_goods_querycollect(s, page, 10)
+            if 'activityId' in collection_ret and 'goodsCollectVoList' in collection_ret:
+                activity_id = collection_ret['activityId']
+                for itm in collection_ret['goodsCollectVoList']:
+                    if ('itemId' in itm
+                        and 'itemName' in itm
+                        and 'itemPrice' in itm
+                        and float(itm['itemPrice']) < available_quota):
+
+                        item = dict()
+                        item['activityId'] = activity_id
+                        item['itemType'] = 'TBK_GOODS'
+                        item['itemId'] = itm['itemId']
+                        item['title'] = itm['itemName']
+                        item['salePrice'] = itm['itemPrice']
+
+                        available_quota, limit_quota = lottery(s, item, available_quota)
+                        if available_quota <= 0:
+                            break
+
+                if len(collection_ret['goodsCollectVoList']) >= 10:
+                    page += 1
+                else:
+                    break
+            else:
+                break
+
+        print('已经完成个人收藏的商品进行抽奖！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################
@@ -1659,30 +1727,37 @@ def on_ready(s):
                 if user_prop_num <= 0:
                     print('抽奖次数不足！')
                 else:
-                    for i in range(0, len(tab_list['indexItemVoList'])):
-                        item = tab_list['indexItemVoList'][i]
-                        if ('activityId' in item
-                            and 'itemId' in item
-                            and 'itemType' in item
-                            and 'title' in item):
-                            if ('status' not in item) or (item['status'] != 'FINISHED'):
-                                status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
-                                if 'userPropNum' in status_info:
-                                    user_prop_num = int(status_info['userPropNum'])
-                                    if user_prop_num <= 0:
-                                        print('抽奖次数已用完！')
-                                        break
+                    lotteried = False # 优先抽几羊周边商品
+                    while user_prop_num > 0:
+                        for i in range(0, len(tab_list['indexItemVoList'])):
+                            item = tab_list['indexItemVoList'][i]
+                            if ('activityId' in item
+                                and 'itemId' in item
+                                and 'itemType' in item
+                                and 'title' in item):
+                                if (lotteried or item['title'].find('几羊') >= 0) and (('status' not in item) or (item['status'] != 'FINISHED')):
+                                    status_info = alipay_mobile_aggrbillinfo_duplicate_lottery_status(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                                    if 'userPropNum' in status_info:
+                                        user_prop_num = int(status_info['userPropNum'])
+                                        if user_prop_num <= 0:
+                                            print('抽奖次数已用完！')
+                                            break
 
-                                print('开始组团抽奖，剩余抽奖次数：', user_prop_num, '商品为', item['title'])
-                                lottery_ret = alipay_mobile_aggrbillinfo_duplicate_lottery(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
-                                if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
-                                    yaoyiyao_ret = alipay_mobile_aggrbillinfo_duplicate_group_yaoyiyao(s, item['activityId'], lottery_ret['lotteryRecordId'])
-                                    if 'memberTotal' in yaoyiyao_ret and 'lotteryCode' in lottery_ret:
-                                        print('已参加商品', item['title'], '的组团抽奖',
-                                            '组团人数：', yaoyiyao_ret['memberTotal'],
-                                            '抽奖幸运号码：', lottery_ret['lotteryCode'])
+                                    print('开始组团抽奖，剩余抽奖次数：', user_prop_num, '商品为', item['title'])
+                                    lottery_ret = alipay_mobile_aggrbillinfo_duplicate_lottery(s, item['activityId'], duplicate_activity_type, item['itemId'], item['itemType'])
+                                    if 'lotteryRecordId' in lottery_ret: # 继续进行摇一摇
+                                        yaoyiyao_ret = alipay_mobile_aggrbillinfo_duplicate_group_yaoyiyao(s, item['activityId'], lottery_ret['lotteryRecordId'])
+                                        if 'memberTotal' in yaoyiyao_ret and 'lotteryCode' in lottery_ret:
+                                            print('已参加商品', item['title'], '的组团抽奖',
+                                                '组团人数：', yaoyiyao_ret['memberTotal'],
+                                                '抽奖幸运号码：', lottery_ret['lotteryCode'])
+                            else:
+                                print('商品信息有误：', item)
+
+                        if not lotteried:
+                            lotteried = True
                         else:
-                            print('商品信息有误：', item)
+                            break
         else:
             print('目前没有正在进行的组团抽奖活动！')
 

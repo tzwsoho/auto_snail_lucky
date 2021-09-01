@@ -24,21 +24,21 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 client_version = '3.6.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-request_interval = 0.1 # 每个请求的间隔时间，不要弄太快小心被封
+request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
 
 device = frida.get_usb_device()
 pid = 0
 
-# for snail_lucky in device.enumerate_processes():
-    # if snail_lucky.name.find('几羊') >= 0:
-        # pid = snail_lucky.pid
-        # break
+for snail_lucky in device.enumerate_processes():
+    if snail_lucky.name.find('几羊') >= 0:
+        pid = snail_lucky.pid
+        break
 
-# if pid == 0:
-    # pid = device.spawn('com.snail.android.lucky')
-    # device.resume(pid)
+if pid == 0:
+    pid = device.spawn('com.snail.android.lucky')
+    device.resume(pid)
 
 # app = device.get_frontmost_application()
 # if app is not None:

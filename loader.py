@@ -1421,6 +1421,7 @@ def on_ready(s):
         max_share_pages = 5 # 每天总共 5 个宝箱
         for i in range(1, max_share_pages + 1):
             # TODO 暂时不知道 remainTime 参数的用途，页面定时刷新倒计时？
+            print('正在查看第', i, '/', max_share_pages, '页...')
             share_list = alipay_mobile_aggrbillinfo_share_square(s, 1, 20, random.randint(0, 300))
             if ('propsGiftBox' in share_list
                 and 'status' in share_list['propsGiftBox']
@@ -1508,6 +1509,7 @@ def on_ready(s):
                     if ('itemId' in itm
                         and 'itemName' in itm
                         and 'itemPrice' in itm
+                        and ('status' not in itm or itm['status'] != 'FINISHED')
                         and float(itm['itemPrice']) < available_quota):
 
                         item = dict()

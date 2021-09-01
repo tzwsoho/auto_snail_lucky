@@ -31,14 +31,14 @@ request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
 device = frida.get_usb_device()
 pid = 0
 
-for snail_lucky in device.enumerate_processes():
-    if snail_lucky.name.find('几羊') >= 0:
-        pid = snail_lucky.pid
-        break
+# for snail_lucky in device.enumerate_processes():
+    # if snail_lucky.name.find('几羊') >= 0:
+        # pid = snail_lucky.pid
+        # break
 
-if pid == 0:
-    pid = device.spawn('com.snail.android.lucky')
-    device.resume(pid)
+# if pid == 0:
+    # pid = device.spawn('com.snail.android.lucky')
+    # device.resume(pid)
 
 # app = device.get_frontmost_application()
 # if app is not None:
@@ -1086,7 +1086,7 @@ def collect_lottery_items_info(s, cate_confs):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_lottery_pages = 5 # 每个分类获取 5 页数据
+        max_lottery_pages = 10 # 每个分类获取 10 页数据
 
         for page in range(1, max_lottery_pages + 1):
             print('正在获取分类', titles[i], '下第', page, '/', max_lottery_pages, '页商品信息，已获取到', len(items), '件商品信息...')

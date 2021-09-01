@@ -320,6 +320,31 @@ def alipay_mobile_aggrbillinfo_sheep_info_extra(s):
     headers = alipay_headers(s, base_info, operation_type, ts, sign)
     return alipay_request(headers, request_data)
 
+# [{"appName":"","appVersion":"3.1.0","clientKey":"fO1IrEE4dh","clientVersion":"3.6.1.0","idfa":"","platform":"h5","token":"ff4386454e90ff20a8079b935c260b9b","type":"GUESS_INDEX","userId":"8088028700051259","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 点击喂羊后弹出的按钮
+# {"idem":false,"success":true}
+def alipay_mobile_aggrbillinfo_sheep_use_card(s, card_type):
+    operation_type = 'alipay.mobile.aggrbillinfo.sheep.use.card'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'appName': '',
+        'appVersion': app_version,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'platform': 'h5',
+        'token': base_info['token'],
+        'type': card_type,
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
 # [{"appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.5.1.0","idfa":"","platform":"h5","token":"19a5d2f04e7cb5579df1302682d3747a","userId":"8088027101103706","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 收集羊奶
 # {"availableBottle":0,"goldNum":20,"idem":false,"needFeedTimes":50,"success":true,"totalBottle":1000}
@@ -1296,6 +1321,10 @@ def on_ready(s):
             and 'giftBoxId' in sheep_info_extra['propsGiftBox']): # 可以开宝箱
             open_box(s, sheep_info_extra['propsGiftBox']['giftBoxId'])
 
+        if ('dropButtonVo' in sheep_info_extra
+            and 'type' in sheep_info_extra['dropButtonVo']): # 可以点按钮（竞猜、抽奖）
+            alipay_mobile_aggrbillinfo_sheep_use_card(s, sheep_info_extra['dropButtonVo']['type'])
+
         # 领取饲料
         popup_info = alipay_mobile_aggrbillinfo_sheep_fodder_popup(s)
         if ('status' in popup_info
@@ -1359,6 +1388,10 @@ def on_ready(s):
                     and 'giftBoxId' in feed_ret['propsGiftBox']
                     and feed_ret['propsGiftBox']['status'] == 'WAIT_OPEN'): # 可以开宝箱
                     open_box(s, feed_ret['propsGiftBox']['giftBoxId'])
+
+                if ('dropButtonVo' in sheep_info_extra
+                    and 'type' in sheep_info_extra['dropButtonVo']): # 可以点按钮（竞猜、抽奖）
+                    alipay_mobile_aggrbillinfo_sheep_use_card(s, sheep_info_extra['dropButtonVo']['type'])
 
                 if 'needFeedTimes' in feed_ret and 'availableFodder' in feed_ret:
                     need_feed_times = int(feed_ret['needFeedTimes'])

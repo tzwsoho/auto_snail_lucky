@@ -1323,6 +1323,7 @@ def on_ready(s):
 
         if ('dropButtonVo' in sheep_info_extra
             and 'type' in sheep_info_extra['dropButtonVo']): # 可以点按钮（竞猜、抽奖）
+            print('点按钮', sheep_info_extra['dropButtonVo']['type'], '...')
             alipay_mobile_aggrbillinfo_sheep_use_card(s, sheep_info_extra['dropButtonVo']['type'])
 
         # 领取饲料
@@ -1389,9 +1390,10 @@ def on_ready(s):
                     and feed_ret['propsGiftBox']['status'] == 'WAIT_OPEN'): # 可以开宝箱
                     open_box(s, feed_ret['propsGiftBox']['giftBoxId'])
 
-                if ('dropButtonVo' in sheep_info_extra
-                    and 'type' in sheep_info_extra['dropButtonVo']): # 可以点按钮（竞猜、抽奖）
-                    alipay_mobile_aggrbillinfo_sheep_use_card(s, sheep_info_extra['dropButtonVo']['type'])
+                if ('dropButtonVo' in feed_ret
+                    and 'type' in feed_ret['dropButtonVo']): # 可以点按钮（竞猜、抽奖）
+                    print('点按钮', feed_ret['dropButtonVo']['type'], '...')
+                    alipay_mobile_aggrbillinfo_sheep_use_card(s, feed_ret['dropButtonVo']['type'])
 
                 if 'needFeedTimes' in feed_ret and 'availableFodder' in feed_ret:
                     need_feed_times = int(feed_ret['needFeedTimes'])

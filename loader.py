@@ -1657,7 +1657,11 @@ def on_ready(s):
                 available_quota, limit_quota = prepare_wool(s)
 
                 # 收取羊毛、使用卡片之后仍不足以符合抽奖需求
-                if available_quota < limit_quota:
+                if item_list is None or len(item_list) <= 0:
+                    if available_quota < limit_quota:
+                        print('可用羊毛只有', available_quota, '不够抽奖，请过段时间再来...')
+                        break
+                elif available_quota < item_list[0]['salePrice']:
                     print('可用羊毛只有', available_quota, '不够抽奖，请过段时间再来...')
                     break
 
@@ -1679,7 +1683,7 @@ def on_ready(s):
                         quota = limit_quota
 
                     # 只对高价商品抽奖
-                    if quota < limit_quota:
+                    if item_list is None or len(item_list) <= 0 or quota < item_list[0]['salePrice']:
                         print('羊毛不够了...')
                         break
 

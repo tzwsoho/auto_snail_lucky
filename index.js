@@ -125,7 +125,14 @@ function getCookie() {
 		return '';
 	}
 
-	return GwCookieCacheHelper.getCookie.call(GwCookieCacheHelper, '.shulidata.com').toString();
+	if (GwCookieCacheHelper.getCookie) {
+		const cookie = GwCookieCacheHelper.getCookie.call(GwCookieCacheHelper, '.shulidata.com');
+		if (cookie) {
+			return cookie.toString();
+		}
+	}
+
+	return '';
 }
 
 function getRpcBaseInfo() {
@@ -134,7 +141,14 @@ function getRpcBaseInfo() {
 		return '';
 	}
 
-	return RpcHelper.getRpcBaseInfo.call(RpcHelper).toString();
+	if (RpcHelper.getRpcBaseInfo) {
+		const rpcBaseInfo = RpcHelper.getRpcBaseInfo.call(RpcHelper);
+		if (rpcBaseInfo) {
+			return rpcBaseInfo.toString();
+		}
+	}
+
+	return '';
 }
 
 function getDeviceId() {
@@ -143,7 +157,14 @@ function getDeviceId() {
 		return '';
 	}
 
-	return DeviceInfoUtil.getDeviceId.call(DeviceInfoUtil).toString();
+	if (DeviceInfoUtil.getDeviceId) {
+		const deviceId = DeviceInfoUtil.getDeviceId.call(DeviceInfoUtil);
+		if (deviceId) {
+			return deviceId.toString();
+		}
+	}
+
+	return '';
 }
 
 function getAppId() {
@@ -152,7 +173,14 @@ function getAppId() {
 		return '';
 	}
 
-	return transMpaasPropertiesUtil.getAppId.overload('android.content.Context').call(transMpaasPropertiesUtil, AndroidContext).toString();
+	if (transMpaasPropertiesUtil.getAppId) {
+		const appId = transMpaasPropertiesUtil.getAppId.overload('android.content.Context').call(transMpaasPropertiesUtil, AndroidContext);
+		if (appId) {
+			return appId.toString();
+		}
+	}
+
+	return '';
 }
 
 function getAppKeyFromMetaData() {
@@ -161,7 +189,14 @@ function getAppKeyFromMetaData() {
 		return '';
 	}
 
-	return transMpaasPropertiesUtil.getAppKeyFromMetaData(AndroidContext).toString();
+	if (transMpaasPropertiesUtil.getAppKeyFromMetaData) {
+		const appKeyFromMetaData = transMpaasPropertiesUtil.getAppKeyFromMetaData(AndroidContext);
+		if (appKeyFromMetaData) {
+			return appKeyFromMetaData.toString();
+		}
+	}
+
+	return '';
 }
 
 function getWorkspaceId() {
@@ -170,7 +205,14 @@ function getWorkspaceId() {
 		return '';
 	}
 
-	return logMpaasPropertiesUtil.getWorkSpaceId.call(logMpaasPropertiesUtil, AndroidContext).toString();
+	if (logMpaasPropertiesUtil.getWorkSpaceId) {
+		const workspaceId = logMpaasPropertiesUtil.getWorkSpaceId.call(logMpaasPropertiesUtil, AndroidContext);
+		if (workspaceId) {
+			return workspaceId.toString();
+		}
+	}
+
+	return '';
 }
 
 function getVersion() {
@@ -179,7 +221,14 @@ function getVersion() {
 		return '';
 	}
 
-	return SdkVersionUtil.getVersion('com.alipay.android.phone.mobilesdk.rpc.BuildConfig').toString().split(':')[1];
+	if (SdkVersionUtil.getVersion) {
+		const version = SdkVersionUtil.getVersion('com.alipay.android.phone.mobilesdk.rpc.BuildConfig');
+		if (version) {
+			return version.toString().split(':')[1];
+		}
+	}
+
+	return '';
 }
 
 function getImei() {
@@ -188,7 +237,14 @@ function getImei() {
 		return '';
 	}
 
-	return DeviceUtil.getImei.call(DeviceUtil, AndroidContext).toString();
+	if (DeviceUtil.getImei) {
+		const imei = DeviceUtil.getImei.call(DeviceUtil, AndroidContext);
+		if (imei) {
+			return imei.toString();
+		}
+	}
+
+	return '';
 }
 
 function getCheckAndroidId() {
@@ -197,7 +253,14 @@ function getCheckAndroidId() {
 		return '';
 	}
 
-	return DeviceUtil.getCheckAndroidID.call(DeviceUtil, AndroidContext).toString();
+	if (DeviceUtil.getCheckAndroidID) {
+		const checkAndroidID = DeviceUtil.getCheckAndroidID.call(DeviceUtil, AndroidContext);
+		if (checkAndroidID) {
+			return checkAndroidID.toString();
+		}
+	}
+
+	return '';
 }
 
 function getAppVersion() {
@@ -206,7 +269,14 @@ function getAppVersion() {
 		return '';
 	}
 
-	return DeviceUtil.getAppVersion.call(DeviceUtil).toString();
+	if (DeviceUtil.getAppVersion) {
+		const appVersion = DeviceUtil.getAppVersion.call(DeviceUtil);
+		if (appVersion) {
+			return appVersion.toString();
+		}
+	}
+
+	return '';
 }
 
 function getChannelId() {
@@ -215,7 +285,14 @@ function getChannelId() {
 		return '';
 	}
 
-	return LogContext.getChannelId().toString();
+	if (LogContext.getChannelId) {
+		const channelId = LogContext.getChannelId();
+		if (channelId) {
+			return channelId.toString();
+		}
+	}
+
+	return '';
 }
 
 function getMac() {
@@ -224,7 +301,17 @@ function getMac() {
 		return '';
 	}
 
-	return DeviceInfo.createInstance.call(DeviceInfo, AndroidContext).getMacAddress().toString();
+	if (DeviceInfo.createInstance) {
+		const cInstance = DeviceInfo.createInstance.call(DeviceInfo, AndroidContext);
+		if (cInstance) {
+			const macAddress = cInstance.getMacAddress();
+			if (macAddress) {
+				return macAddress.toString();
+			}
+		}
+	}
+
+	return '';
 }
 
 // function stringifyMap(m) {

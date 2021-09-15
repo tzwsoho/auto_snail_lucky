@@ -23,7 +23,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 #################################################################################################################################################
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-client_version = '3.6.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+client_version = '3.7.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 request_interval = 0.1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
@@ -156,21 +156,24 @@ def alipay_request(headers, data):
     # build_curl(headers, data)
     ret = ''
 
-    try:
-        data = gzip.compress(data.encode('utf-8'))
-        res = requests.post(url, headers = headers, data = data, verify = False, timeout = 20)
+    data = gzip.compress(data.encode('utf-8'))
+    for _ in range(0, 5):
+        try:
+            res = requests.post(url, headers = headers, data = data, verify = False, timeout = 20)
 
-        # 每个请求间隔一段时间，避免封号
-        if request_interval > 0:
-            time.sleep(request_interval)
+            # 每个请求间隔一段时间，避免封号
+            if request_interval > 0:
+                time.sleep(request_interval)
 
-        ret = res.content.decode('utf-8')
-        # print('*' * 120, '\n', ret, '\n' + '*' * 120)
-        return json.loads(ret)
-    except Exception:
-        traceback.print_exc()
-        print('!' * 120, '\n', ret, '\n' + '!' * 120)
-        return dict()
+            ret = res.content.decode('utf-8')
+            # print('*' * 120, '\n', ret, '\n' + '*' * 120)
+            return json.loads(ret)
+        except Exception:
+            traceback.print_exc()
+            print('!' * 120, '\n', ret, '\n' + '!' * 120)
+            time.sleep(1)
+
+    return dict()
 
 #################################################################################################################################################
 
@@ -1111,7 +1114,7 @@ def collect_lottery_items_info(s, cate_confs):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_lottery_pages = 10 # 每个分类获取 10 页数据
+        max_lottery_pages = 5 # 每个分类获取 10 页数据
 
         for page in range(1, max_lottery_pages + 1):
             print('正在获取分类', titles[i], '下第', page, '/', max_lottery_pages, '页商品信息，已获取到', len(items), '件商品信息...')

@@ -1630,6 +1630,8 @@ def on_ready(s):
     while True:
         print('开始参加抽大奖活动...')
 
+        max_lottery_times = 100 # 最多只抽 100 次
+
         # 根据抽奖限额搜索商品信息
         def binary_search(lst, quota):
             if len(lst) == 0:
@@ -1655,7 +1657,8 @@ def on_ready(s):
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:
             # 开始抽奖
-            while True:
+            lottery_times = 0
+            while lottery_times < max_lottery_times:
                 # 准备足够羊毛并获取羊毛信息
                 available_quota, limit_quota = prepare_wool(s)
 
@@ -1718,8 +1721,12 @@ def on_ready(s):
                     elif item['salePrice'] > available_quota:
                         print('羊毛不足！', item)
                         break
+                    elif lottery_times >= max_lottery_times:
+                        print('已经抽了很多奖品了...')
+                        break
 
                     retried = False
+                    lottery_times += 1
                     available_quota, limit_quota = lottery(s, item, available_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)

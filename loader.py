@@ -1611,7 +1611,7 @@ def on_ready(s):
                         item = item_list[0]
                         item_list.remove(item)
 
-                        if item is None:
+                        if item is None or item['salePrice'] > available_quota:
                             break
 
                         print('本轮抽奖还剩', need_lottery_count - i, '次...')

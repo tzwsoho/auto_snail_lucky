@@ -23,7 +23,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 #################################################################################################################################################
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-client_version = '3.7.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+client_version = '3.8.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 request_interval = 0.1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
@@ -1503,11 +1503,23 @@ def on_ready(s):
                                             print('领取中奖奖励失败：', award_ret['errorMsg'])
                                         else:
                                             print('领取中奖奖励失败！')
+                                    elif 'item' in record and 'title' in record['item']:
+                                        opened = True
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 5 + '恭喜你抽中了：' + record['item']['title'] + '！！！' + '*' * 5)
+                                        print('*' * 5 + '请给我的脚本多多支持！！！' + '*' * 5)
+                                        print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
                                     else:
                                         opened = True
                                         print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
                                         print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
                                         print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                        print('*' * 120 + '\n' + '*' * 120)
                                         print('*' * 120 + '\n' + '*' * 120)
                                         webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
 

@@ -23,7 +23,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 #################################################################################################################################################
 
 app_version = '3.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
-client_version = '3.7.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
+client_version = '3.8.1.0' # 每次有版本更新时需要用 ssl_tool 重新获取
 request_interval = 1 # 每个请求的间隔时间，不要弄太快小心被封
 
 #################################################################################################################################################
@@ -1492,7 +1492,7 @@ def on_ready(s):
                                 if ('status' in record
                                     and record['status'] == 'SUCCESS'
                                     and not opened):
-                                    if 'recordId' in record and open_ret['activityType'] == 'TEN_THOUSAND': # 万人团中奖，直接领取羊奶奖励
+                                    if 'recordId' in record and open_ret['activityType'] == 'DUPLICATE_GOLD': # 万人团中奖，直接领取羊奶奖励
                                         award_ret = alipay_mobile_aggrbillinfo_duplicate_award(s, record['recordId'])
                                         if ('success' in award_ret
                                             and 'cashPrizeAlertVo' in award_ret
@@ -1503,11 +1503,23 @@ def on_ready(s):
                                             print('领取中奖奖励失败：', award_ret['errorMsg'])
                                         else:
                                             print('领取中奖奖励失败！')
+                                    elif 'item' in record and 'title' in record['item']:
+                                        opened = True
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 5 + '恭喜你抽中了：' + record['item']['title'] + '！！！' + '*' * 5)
+                                        print('*' * 5 + '请给我的脚本多多支持！！！' + '*' * 5)
+                                        print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
+                                        webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
                                     else:
                                         opened = True
                                         print('*' * 120 + '\n' + '*' * 120)
+                                        print('*' * 120 + '\n' + '*' * 120)
                                         print('*' * 5 + '恭喜你中奖了！！！请给我的脚本多多支持！！！' + '*' * 5)
                                         print('*' * 5 + 'https://github.com/tzwsoho/auto_snail_lucky' + '*' * 5)
+                                        print('*' * 120 + '\n' + '*' * 120)
                                         print('*' * 120 + '\n' + '*' * 120)
                                         webbrowser.open('https://github.com/tzwsoho/auto_snail_lucky', new = 0, autoraise = True)
 
@@ -1611,7 +1623,7 @@ def on_ready(s):
                         item = item_list[0]
                         item_list.remove(item)
 
-                        if item is None:
+                        if item is None or item['salePrice'] > available_quota:
                             break
 
                         print('本轮抽奖还剩', need_lottery_count - i, '次...')
@@ -1629,6 +1641,8 @@ def on_ready(s):
 
     while True:
         print('开始参加抽大奖活动...')
+
+        max_lottery_times = 100 # 最多只抽 100 次
 
         # 根据抽奖限额搜索商品信息
         def binary_search(lst, quota):
@@ -1655,7 +1669,8 @@ def on_ready(s):
         sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
         if 'cateConfs' in sign_list:
             # 开始抽奖
-            while True:
+            lottery_times = 0
+            while lottery_times < max_lottery_times:
                 # 准备足够羊毛并获取羊毛信息
                 available_quota, limit_quota = prepare_wool(s)
 
@@ -1718,8 +1733,12 @@ def on_ready(s):
                     elif item['salePrice'] > available_quota:
                         print('羊毛不足！', item)
                         break
+                    elif lottery_times >= max_lottery_times:
+                        print('已经抽了很多奖品了...')
+                        break
 
                     retried = False
+                    lottery_times += 1
                     available_quota, limit_quota = lottery(s, item, available_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)

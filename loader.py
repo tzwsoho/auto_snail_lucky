@@ -1492,7 +1492,7 @@ def on_ready(s):
                                 if ('status' in record
                                     and record['status'] == 'SUCCESS'
                                     and not opened):
-                                    if 'recordId' in record and open_ret['activityType'] == 'TEN_THOUSAND': # 万人团中奖，直接领取羊奶奖励
+                                    if 'recordId' in record and open_ret['activityType'] == 'DUPLICATE_GOLD': # 万人团中奖，直接领取羊奶奖励
                                         award_ret = alipay_mobile_aggrbillinfo_duplicate_award(s, record['recordId'])
                                         if ('success' in award_ret
                                             and 'cashPrizeAlertVo' in award_ret

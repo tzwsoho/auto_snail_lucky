@@ -1589,8 +1589,10 @@ def on_ready(s):
                         and ('status' not in itm or itm['status'] != 'FINISHED')):
 
                         if float(itm['itemPrice']) > available_quota:
+                            print('当前商品', itm['itemName'], '价格：', itm['itemPrice'], '已超出剩余羊毛数量：', available_quota, '，需要收一波羊毛再抽奖...')
                             available_quota, limit_quota = prepare_wool(s)
                             if float(itm['itemPrice']) > available_quota: # 剩余的羊毛不够抽当前商品
+                                print('当前剩余的羊毛不足以对商品', itm['itemName'], '进行抽奖，尝试下一个收藏的商品...')
                                 continue
 
                         item = dict()
@@ -1667,7 +1669,7 @@ def on_ready(s):
                             break
 
                         print('本轮抽奖还剩', need_lottery_count - i, '次...')
-                        available_quota, limit_quota = lottery(s, item, available_quota)
+                        available_quota, limit_quota, _ = lottery(s, item, available_quota)
                         if available_quota <= 0:
                             break
                 else:
@@ -1779,7 +1781,7 @@ def on_ready(s):
 
                     retried = False
                     lottery_times += 1
-                    available_quota, limit_quota = lottery(s, item, available_quota)
+                    available_quota, limit_quota, _ = lottery(s, item, available_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)
         break

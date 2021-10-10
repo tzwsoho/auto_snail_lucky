@@ -674,6 +674,32 @@ def alipay_mobile_aggrbillinfo_goods_querycollect(s, page_no, page_size):
     headers = alipay_headers(s, base_info, operation_type, ts, sign)
     return alipay_request(headers, request_data)
 
+# [{"apdid":"eYOIklh0fx+q45vhS42sTIrQW34TfllmX7kMdv1O0/t5LjSljthHIvzQ","bizType":"GOODS","clientKey":"M5QTHP9fUo","clientVersion":"3.8.0.89","goodsSource":"TAOBAO","itemId":"629700240255","model":"NX563J","platform":"Android","token":"5d663e143368c436e06526581fae35ed","userId":"8088015381344935","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 取消商品收藏
+# {"favoriteId":"2021083102694116693","idem":false,"newAdd":true,"success":true}
+def alipay_mobile_aggrbillinfo_goods_cancelcollect(s, biz_type, goods_source, item_id):
+    operation_type = 'alipay.mobile.aggrbillinfo.goods.cancelcollect'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'apdid': base_info['apdid'],
+        'bizType': biz_type,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': base_info['clientVersion'],
+        'goodsSource': goods_source,
+        'itemId': item_id,
+        'model': base_info['model'],
+        'platform': base_info['platform'],
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
 # [{"apdid":"eYOIkqXXI47JWb8cn6D0oxaU6hpIwTEZaRVOVsJYT4PVrbuCEep0RQBG","clientKey":"IBdxM1u3SL","clientVersion":"3.4.0.69","model":"NX563J","pageNo":2,"pageSize":20,"paramStr":"{\"materialId\": \"6708\"}","platform":"Android","remainTime":72,"token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 获取抽奖大厅列表
 # {"duplicateActivityVos":[{"activityIcon1":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*W9nXSZAfv1QAAAAAAAAAAAAAARQnAQ","activityIcon2":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*bsxbSrx-xmgAAAAAAAAAAAAAARQnAQ","activityName":"千人团进行中","activityStatus":"INIT","activityStatusText":"进行中","activityType":"THOUSAND","backGroupImg":"https://gw.alipayobjects.com/mdn/TinyAppInnovation/afts/img/A*hzL8RJ-NeSAAAAAAAAAAAAAAARQnAQ","context":"千人组团","currentLocation":true,"dateStr":"今日","endTime":1628071200000,"itemInfoList":[{"groupNum":1300,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01neVnhF1ri9zEKXR75_!!2208161825664-0-cib.jpg_350x350.jpg"},{"groupNum":1300,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01aomRpl2JEDM10QjYz_!!2200778929389-0-cib.jpg_350x350.jpg"},{"groupNum":1200,"pictUrl":"https://cbu01.alicdn.com/img/ibank/O1CN01eMsyp41L4iBv2okr4_!!2410081246-0-cib.jpg_350x350.jpg"}],"openTime":1628078400000,"priority":1,"prizeText":"已有197787人中奖","ruleUrl":"https://render.alipay.com/p/c/18357y4lalr4","startTime":1628053200000,"timeStr":"13:00"}],"idem":false,"itemVoList":[{"activityId":"2021080400816262800","afterButtonText":"已参与","basePrice":0,"beforeButtonText":"免费抽奖","expireFlag":false,"itemId":"536454755630","itemNum":0,"itemType":"TBK_GOODS","lotteryPersonText":"累计608人参与抽奖","needPropNum":0,"participateCount":608,"pictUrl":"https://img.alicdn.com/bao/uploaded/i3/1611893164/O1CN01ClgGJ01ZF9l974Cqu_!!0-item_pic.jpg_350x350.jpg","price":0,"salePrice":"79.00","status":"INIT","title":"㊙赤豪澳洲家庭儿童牛排套餐10刀叉","tmallBrandName":"赤豪食品","volume":22,"whiteImage":"https://img.alicdn.com/bao/uploaded/TB1Av3WOsfpK1RjSZFOSuu6nFXa.jpg_350x350.jpg"},{"activityId":"2021080400816262800","afterButtonText":"已参与","basePrice":0,"beforeButtonText":"免费抽奖","expireFlag":false,"itemId":"545009700223","itemNum":0,"itemType":"TBK_GOODS","lotteryPersonText":"累计1085人参与抽奖","needPropNum":0,"participateCount":1085,"pictUrl":"https://img.alicdn.com/bao/uploaded/i2/2780830659/O1CN01EGNvay1GjrgeICkdR_!!2780830659.jpg_350x350.jpg","price":0,"salePrice":"16.80","status":"INIT","title":"男士秋裤单...
@@ -1189,6 +1215,7 @@ def lottery(s, item, available_quota):
 
     print('开始抽奖', '商品为：', item['title'], '价格：', item['salePrice'], '剩余可用羊毛：', available_quota)
 
+    err = None
     lottery_ret = alipay_mobile_aggrbillinfo_lottery_lottery(s, item['activityId'], item['itemId'], 'MANUAL', item['itemType'])
     if ('success' in lottery_ret
         and lottery_ret['success']
@@ -1233,8 +1260,10 @@ def lottery(s, item, available_quota):
         #     print('参与商品', item['title'], '的摇一摇失败！')
     elif 'errorMsg' in lottery_ret:
         print('参与商品', item['title'], '的抽奖失败：', lottery_ret['errorMsg'])
+        err = lottery_ret['errorMsg']
     else:
         print('参与商品', item['title'], '的抽奖失败！')
+        err = 'Unknown'
 
     # 刷新羊毛信息
     limit_quota = float(0)
@@ -1244,7 +1273,7 @@ def lottery(s, item, available_quota):
         available_quota = float(sheep_info['availableQuota']) # 目前可用来抽奖的羊毛数
         limit_quota = float(sheep_info['limitQuota']) # 可抽奖商品价格上限
 
-    return available_quota, limit_quota
+    return available_quota, limit_quota, err
 
 def on_ready(s):
     while True:
@@ -1555,8 +1584,16 @@ def on_ready(s):
                     if ('itemId' in itm
                         and 'itemName' in itm
                         and 'itemPrice' in itm
-                        and ('status' not in itm or itm['status'] != 'FINISHED')
-                        and float(itm['itemPrice']) < available_quota):
+                        and 'bizType' in itm
+                        and 'goodsSource' in itm
+                        and ('status' not in itm or itm['status'] != 'FINISHED')):
+
+                        if float(itm['itemPrice']) > available_quota:
+                            print('当前商品', itm['itemName'], '价格：', itm['itemPrice'], '已超出剩余羊毛数量：', available_quota, '，需要收一波羊毛再抽奖...')
+                            available_quota, limit_quota = prepare_wool(s)
+                            if float(itm['itemPrice']) > available_quota: # 剩余的羊毛不够抽当前商品
+                                print('当前剩余的羊毛不足以对商品', itm['itemName'], '进行抽奖，尝试下一个收藏的商品...')
+                                continue
 
                         item = dict()
                         item['activityId'] = activity_id
@@ -1565,7 +1602,12 @@ def on_ready(s):
                         item['title'] = itm['itemName']
                         item['salePrice'] = itm['itemPrice']
 
-                        available_quota, limit_quota = lottery(s, item, available_quota)
+                        available_quota, limit_quota, err = lottery(s, item, available_quota)
+                        if err is not None: # 取消收藏无效商品
+                            print('商品', itm['itemName'], '已无效，取消收藏！')
+                            alipay_mobile_aggrbillinfo_goods_cancelcollect(s, itm['bizType'], itm['goodsSource'], itm['itemId'])
+                            continue
+
                         if available_quota <= 0:
                             break
 
@@ -1627,7 +1669,7 @@ def on_ready(s):
                             break
 
                         print('本轮抽奖还剩', need_lottery_count - i, '次...')
-                        available_quota, limit_quota = lottery(s, item, available_quota)
+                        available_quota, limit_quota, _ = lottery(s, item, available_quota)
                         if available_quota <= 0:
                             break
                 else:
@@ -1739,7 +1781,7 @@ def on_ready(s):
 
                     retried = False
                     lottery_times += 1
-                    available_quota, limit_quota = lottery(s, item, available_quota)
+                    available_quota, limit_quota, _ = lottery(s, item, available_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)
         break

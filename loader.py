@@ -1747,7 +1747,7 @@ def on_ready(s):
     while True:
         print('开始参加抽大奖活动...')
 
-        max_lottery_times = 10000 # 最多只抽 100 次
+        max_lottery_times = 1000 # 最多只抽 1000 次
 
         # 根据抽奖限额搜索商品信息
         def binary_search(lst, quota):
@@ -1798,6 +1798,7 @@ def on_ready(s):
                         item_list = collect_lottery_items_info(s, sign_list['cateConfs'], limit_quota, depth)
                         if len(item_list) < 100:
                             depth += 1
+                            max_lottery_times += 1000
 
                     #########################################################################################################
                     # 从最高可抽的商品开始抽奖

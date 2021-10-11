@@ -1267,14 +1267,16 @@ def collect_lottery_items_info(s, cate_confs, limit_quota, depth):
 
     return item_list
 
-def lottery(s, item, available_quota):
+def lottery(s, item, available_quota, limit_quota):
     if (item is None
         or 'title' not in item
         or 'salePrice' not in item
         or 'activityId' not in item
         or 'itemId' not in item
-        or 'itemType' not in item):
-        return
+        or 'itemType' not in item
+        or available_quota < float(item['salePrice'])
+        or limit_quota < float(item['salePrice'])):
+        return available_quota, limit_quota, None
 
     print('开始抽奖', '商品为：', item['title'], '价格：', item['salePrice'], '剩余可用羊毛：', available_quota)
 
@@ -1322,7 +1324,7 @@ def lottery(s, item, available_quota):
         # else:
         #     print('参与商品', item['title'], '的摇一摇失败！')
     elif 'errorMsg' in lottery_ret:
-        print('参与商品', item['title'], '的抽奖失败：', lottery_ret['errorMsg'])
+        print('参与商品', item['title'], '的抽奖失败：', lottery_ret['errorMsg'], item['salePrice'], available_quota, limit_quota)
         err = lottery_ret['errorMsg']
     else:
         print('参与商品', item['title'], '的抽奖失败！')
@@ -1665,7 +1667,7 @@ def on_ready(s):
                         item['title'] = itm['itemName']
                         item['salePrice'] = itm['itemPrice']
 
-                        available_quota, limit_quota, err = lottery(s, item, available_quota)
+                        available_quota, limit_quota, err = lottery(s, item, available_quota, limit_quota)
                         if err is not None: # 取消收藏无效商品
                             print('商品', itm['itemName'], '已无效，取消收藏！')
                             alipay_mobile_aggrbillinfo_goods_cancelcollect(s, itm['bizType'], itm['goodsSource'], itm['itemId'])
@@ -1732,7 +1734,7 @@ def on_ready(s):
                             break
 
                         print('本轮抽奖还剩', need_lottery_count - i, '次...')
-                        available_quota, limit_quota, _ = lottery(s, item, available_quota)
+                        available_quota, limit_quota, _ = lottery(s, item, available_quota, limit_quota)
                         if available_quota <= 0:
                             break
                 else:
@@ -1747,7 +1749,7 @@ def on_ready(s):
     while True:
         print('开始参加抽大奖活动...')
 
-        max_lottery_times = 1000 # 最多只抽 1000 次
+        max_lottery_times = 100 # 最多只抽 100 次
 
         # 根据抽奖限额搜索商品信息
         def binary_search(lst, quota):
@@ -1798,7 +1800,7 @@ def on_ready(s):
                         item_list = collect_lottery_items_info(s, sign_list['cateConfs'], limit_quota, depth)
                         if len(item_list) < 100:
                             depth += 1
-                            max_lottery_times += 1000
+                            max_lottery_times += 100
 
                     #########################################################################################################
                     # 从最高可抽的商品开始抽奖
@@ -1848,7 +1850,7 @@ def on_ready(s):
 
                     retried = False
                     lottery_times += 1
-                    available_quota, limit_quota, _ = lottery(s, item, available_quota)
+                    available_quota, limit_quota, _ = lottery(s, item, available_quota, limit_quota)
 
         print('已经完成抽大奖活动！', '\n' + '*' * 120)
         break

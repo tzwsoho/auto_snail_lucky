@@ -111,6 +111,7 @@ def alipay_headers(s, base_info, operation_type, ts, sign):
         'channelid': channel_id,
         'imei': imei,
         'token': base_info['token'],
+        'manufacturer': base_info['manufacturer'],
         'userid': base_info['userId'],
         'clientversion': base_info['clientVersion'],
         'mac': mac,

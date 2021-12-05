@@ -81,3 +81,7 @@ python loader.py
 # 如果有哪位欧皇人品爆发抽中大奖，或是想支持本脚本的持续开发，欢迎给本人打赏支持！！！
 
 ![alipay.jpg](./img/alipay.jpg) ![wechat.jpg](./img/wechat.jpg)
+
+特别鸣谢赞助人：
+
+[cyist](https://github.com/cyist)

@@ -807,6 +807,81 @@ def alipay_mobile_aggrbillinfo_group_yaoyiyao(s, lottery_id):
     headers = alipay_headers(s, base_info, operation_type, ts, sign)
     return alipay_request(headers, request_data)
 
+# [{"apdid":"eYOIklh0fx+q45vhS42sTIrQW34TfllmX7kMdv1O0/t5LjSljthHIvzQ","clientKey":"8pVlVjRnHp","clientVersion":"3.11.0.17","lotteryRecordId":"2021120506837266531","model":"NX563J","platform":"Android","token":"a3b86210d39ae4652865c33fee8be62c","userId":"8088015060932312","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 获取抽奖大厅抽奖后的随机自选码
+# lottery_id 为 alipay_mobile_aggrbillinfo_lottery_lottery 结果里面的 lotteryRecordId
+# {"codeId":"945994526","codeSource":"CHUAN_SHAN_JIA","codeType":"SCREEN","discount":"限时5折","discountGold":300,"idem":false,"lotteryCode":"7007086","oldGold":600,"success":true}
+def alipay_mobile_aggrbillinfo_lottery_optional_random(s, lottery_id):
+    operation_type = 'alipay.mobile.aggrbillinfo.lottery.optional.random'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'apdid': base_info['apdid'],
+        'clientKey': base_info['clientKey'],
+        'clientVersion': base_info['clientVersion'],
+        'lotteryRecordId': lottery_id,
+        'model': base_info['model'],
+        'platform': base_info['platform'],
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"apdid":"eYOIklh0fx+q45vhS42sTIrQW34TfllmX7kMdv1O0/t5LjSljthHIvzQ","clientKey":"8pVlVjRnHp","clientVersion":"3.11.0.17","lotteryCode":"7007086","lotteryRecordId":"2021120506837266531","model":"NX563J","paymentType":"AD","platform":"Android","token":"a3b86210d39ae4652865c33fee8be62c","userId":"8088015060932312","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 使用自选码抽奖
+# {"idem":false,"success":true}
+def alipay_mobile_aggrbillinfo_lottery_optional_payment(s, lottery_code, lottery_id, payment_type):
+    operation_type = 'alipay.mobile.aggrbillinfo.lottery.optional.payment'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'apdid': base_info['apdid'],
+        'clientKey': base_info['clientKey'],
+        'clientVersion': base_info['clientVersion'],
+        'lotteryCode': lottery_code,
+        'lotteryRecordId': lottery_id,
+        'model': base_info['model'],
+        'paymentType': payment_type,
+        'platform': base_info['platform'],
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"apdid":"eYOIklh0fx+q45vhS42sTIrQW34TfllmX7kMdv1O0/t5LjSljthHIvzQ","clientKey":"8pVlVjRnHp","clientVersion":"3.11.0.17","lotteryRecordId":"2021120506837266531","model":"NX563J","platform":"Android","token":"a3b86210d39ae4652865c33fee8be62c","userId":"8088015060932312","utdid":"UJDAhJQGS6sDAFIUoLkL8xs6"}]
+# 观看自选码广告视频响应
+# {"idem":false,"success":true}
+def alipay_mobile_aggrbillinfo_lottery_optional_adsence_report(s, lottery_id):
+    operation_type = 'alipay.mobile.aggrbillinfo.lottery.optional.adsence.report'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'apdid': base_info['apdid'],
+        'clientKey': base_info['clientKey'],
+        'clientVersion': base_info['clientVersion'],
+        'lotteryRecordId': lottery_id,
+        'model': base_info['model'],
+        'platform': base_info['platform'],
+        'token': base_info['token'],
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
 # [{"activityType":"THOUSAND","appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.4.1.0","idfa":"","pageNo":1,"pageSize":100,"platform":"h5","token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
 # 组团抽奖活动信息列表
 # activity_type 有三种：HUNDREDS - 百人团，THOUSAND - 千人团，TEN_THOUSAND - 万人团
@@ -1324,6 +1399,26 @@ def lottery(s, item, available_quota, limit_quota):
         #     print('参与商品', item['title'], '的摇一摇失败：', yaoyiyao_ret['errorMsg'])
         # else:
         #     print('参与商品', item['title'], '的摇一摇失败！')
+
+        # 获取随机自选码
+        random_ret = alipay_mobile_aggrbillinfo_lottery_optional_random(s, lottery_ret['lotteryRecordId'])
+        if random_ret['success'] and 'lotteryCode' in random_ret:
+            payment_ret = alipay_mobile_aggrbillinfo_lottery_optional_payment(s, random_ret['lotteryCode'], lottery_ret['lotteryRecordId'], 'AD')
+            if payment_ret['success']:
+                alipay_mobile_aggrbillinfo_lottery_optional_adsence_report(s, lottery_ret['lotteryRecordId'])
+                print('已参加商品', item['title'], '的抽奖', '自选码：', random_ret['lotteryCode'])
+            elif 'errorMsg' in payment_ret:
+                print('参与商品', item['title'], '的随机自选码抽奖失败：', payment_ret['errorMsg'], item['salePrice'], available_quota, limit_quota)
+                err = payment_ret['errorMsg']
+            else:
+                print('参与商品', item['title'], '的随机自选码抽奖失败！')
+                err = 'Unknown'
+        elif 'errorMsg' in random_ret:
+            print('参与商品', item['title'], '的获取随机自选码失败：', random_ret['errorMsg'], item['salePrice'], available_quota, limit_quota)
+            err = random_ret['errorMsg']
+        else:
+            print('参与商品', item['title'], '的获取随机自选码失败！')
+            err = 'Unknown'
     elif 'errorMsg' in lottery_ret:
         print('参与商品', item['title'], '的抽奖失败：', lottery_ret['errorMsg'], item['salePrice'], available_quota, limit_quota)
         err = lottery_ret['errorMsg']

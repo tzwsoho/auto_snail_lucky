@@ -1287,7 +1287,7 @@ def collect_lottery_items_info(s, cate_confs, limit_quota, depth):
     print('开始收集商品信息...')
     for i in range(0, len(param_strs)):
         page_size = 20 # 每次获取 20 个商品
-        max_lottery_pages = 10 # 每个分类获取 10 页数据
+        max_lottery_pages = 5 # 每个分类获取 5 页数据
 
         for page in range(1, max_lottery_pages + 1):
             print('正在获取分类', titles[i], '下第', page, '/', max_lottery_pages, '页商品信息，已获取到', len(items), '件商品信息...')
@@ -1785,7 +1785,7 @@ def on_ready(s):
     #################################################################################################################################################
 
     while True:
-        print('开始每日抽满 500 次领最高 9000g 饲料...')
+        print('开始每日抽满 400 次领最高 3200g 饲料...')
 
         item_list = None
         while True:
@@ -1795,7 +1795,7 @@ def on_ready(s):
                 or 'status' not in fodder_popup
                 or 'needLotteryCountStr' not in fodder_popup
                 or fodder_popup['needLotteryCountStr'] == ''
-                or int(fodder_popup['canAcquireFodder']) >= 9000):
+                or int(fodder_popup['canAcquireFodder']) >= 3200):
                 break
 
             left_times = 0
@@ -1805,8 +1805,8 @@ def on_ready(s):
             elif fodder_popup['status'] == 'NORMAL':
                 fodder_toast = '再抽奖 ' + fodder_popup['needLotteryCountStr'] + ' 次可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料！'
             elif fodder_popup['status'] == 'MODULUS_TOP':
-                left_times = (9000 - int(fodder_popup['canAcquireFodder'])) // int(fodder_popup['fodderNumStr'])
-                fodder_toast = '再抽奖 ' + str(left_times) + ' 次可领取最高 9000g 饲料！'
+                left_times = (3200 - int(fodder_popup['canAcquireFodder'])) // int(fodder_popup['fodderNumStr'])
+                fodder_toast = '再抽奖 ' + str(left_times) + ' 次可领取最高 3200g 饲料！'
             print(fodder_toast)
 
             sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
@@ -1837,7 +1837,7 @@ def on_ready(s):
                     print('当前羊毛不足以抽奖，请过段时间再来...')
                     break
 
-        print('已经完成每日抽满 500 次，明日可领最高 9000g 饲料！', '\n' + '*' * 120)
+        print('已经完成每日抽满 400 次，明日可领最高 3200g 饲料！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################

@@ -1785,59 +1785,48 @@ def on_ready(s):
     #################################################################################################################################################
 
     while True:
-        print('开始每日抽满 400 次领最高 3200g 饲料...')
+        print('开始每日抽满次数领最高饲料奖励...')
 
         item_list = None
         while True:
-            fodder_popup = alipay_mobile_aggrbillinfo_sheep_fodder_popup(s)
-            if ('canAcquireFodder' not in fodder_popup
-                or 'fodderNumStr' not in fodder_popup
-                or 'status' not in fodder_popup
-                or 'needLotteryCountStr' not in fodder_popup
-                or fodder_popup['needLotteryCountStr'] == ''
-                or int(fodder_popup['canAcquireFodder']) >= 3200):
-                break
-
-            left_times = 0
-            fodder_toast = ''
-            if fodder_popup['status'] == 'CAN_ACQUIRE':
-                fodder_toast = '当前可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料！'
-            elif fodder_popup['status'] == 'NORMAL':
-                fodder_toast = '再抽奖 ' + fodder_popup['needLotteryCountStr'] + ' 次可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料！'
-            elif fodder_popup['status'] == 'MODULUS_TOP':
-                left_times = (3200 - int(fodder_popup['canAcquireFodder'])) // int(fodder_popup['fodderNumStr'])
-                fodder_toast = '再抽奖 ' + str(left_times) + ' 次可领取最高 3200g 饲料！'
-            print(fodder_toast)
-
             sign_list = alipay_mobile_aggrbillinfo_user_sign_list(s)
             if 'cateConfs' in sign_list:
                 # 准备足够羊毛并获取羊毛信息
                 available_quota, limit_quota = prepare_wool(s)
-                if available_quota > 0:
-                    need_lottery_count = left_times
-                    if fodder_popup['status'] != 'MODULUS_TOP':
-                        need_lottery_count = int(fodder_popup['needLotteryCountStr'])
+                while available_quota > 0:
+                    fodder_popup = alipay_mobile_aggrbillinfo_sheep_fodder_popup(s)
+                    if ('canAcquireFodder' not in fodder_popup
+                        or 'fodderNumStr' not in fodder_popup
+                        or 'status' not in fodder_popup
+                        or 'needLotteryCountStr' not in fodder_popup
+                        or fodder_popup['fodderNumStr'] == ''
+                        or fodder_popup['needLotteryCountStr'] == ''):
+                        break
 
-                    for i in range(0, need_lottery_count):
-                        if item_list is None or len(item_list) <= 0:
-                            item_list = collect_lottery_items_info(s, sign_list['cateConfs'], limit_quota, 0)
+                    fodder_toast = ''
+                    need_lottery_count = int(fodder_popup['needLotteryCountStr'])
+                    if fodder_popup['status'] != 'COUNT_TOP' and need_lottery_count > 0:
+                        fodder_toast = '当前可领取 ' + fodder_popup['canAcquireFodder'] + 'g 饲料！'
+                    else:
+                        break
 
-                        # 从最低价商品开始抽奖
-                        item = item_list[0]
-                        item_list.remove(item)
+                    print(fodder_toast)
 
-                        if item is None or item['salePrice'] > available_quota:
-                            break
+                    if item_list is None or len(item_list) <= 0:
+                        item_list = collect_lottery_items_info(s, sign_list['cateConfs'], limit_quota, 0)
 
-                        print('本轮抽奖还剩', need_lottery_count - i, '次...')
-                        available_quota, limit_quota, _ = lottery(s, item, available_quota, limit_quota)
-                        if available_quota <= 0:
-                            break
-                else:
-                    print('当前羊毛不足以抽奖，请过段时间再来...')
-                    break
+                    # 从最低价商品开始抽奖
+                    item = item_list[0]
+                    item_list.remove(item)
 
-        print('已经完成每日抽满 400 次，明日可领最高 3200g 饲料！', '\n' + '*' * 120)
+                    if item is None or item['salePrice'] > available_quota:
+                        break
+
+                    available_quota, limit_quota, _ = lottery(s, item, available_quota, limit_quota)
+
+                break
+
+        print('已经完成每日抽满次数，明日可领最高饲料奖励！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################

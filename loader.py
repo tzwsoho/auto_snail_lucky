@@ -6,6 +6,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import frida
 import gzip
 import base64
@@ -266,6 +267,30 @@ def alipay_mobile_aggrbillinfo_props_card_use(s, consume_num, card_type):
         'platform': 'h5',
         'token': base_info['token'],
         'type': card_type,
+        'userId': base_info['userId'],
+        'utdid': base_info['utdid'],
+    }], separators=(',', ':'))
+    ts = get_ts()
+    sign = alipay_sign(s, operation_type, request_data, ts)
+    # print(sign)
+
+    headers = alipay_headers(s, base_info, operation_type, ts, sign)
+    return alipay_request(headers, request_data)
+
+# [{"appName":"","appVersion":"3.1.0","clientKey":"IBdxM1u3SL","clientVersion":"3.4.1.0","idfa":"","platform":"h5","token":"46d492d238ce6908915c0f797437bb0d","userId":"8088025113224702","utdid":"UJDJKxiEx1gDAFIUoLkA0uxx"}]
+# 雇佣绵羊打工
+# {"currentTime":1646670016919,"idem":false,"sheepWorkInfo":{"status":"WORKING","taskTransId":"2022030842017315370","workEndSeconds":10799,"workEndTime":1646680816857,"workStartTime":1646670016857},"success":true}
+def alipay_mobile_aggrbillinfo_sheep_work(s):
+    operation_type = 'alipay.mobile.aggrbillinfo.sheep.work'
+    base_info = json.loads(s.exports.get_rpc_base_info())
+    request_data = json.dumps([{
+        'appName': '',
+        'appVersion': app_version,
+        'clientKey': base_info['clientKey'],
+        'clientVersion': client_version,
+        'idfa': '',
+        'platform': 'h5',
+        'token': base_info['token'],
         'userId': base_info['userId'],
         'utdid': base_info['utdid'],
     }], separators=(',', ':'))
@@ -1633,7 +1658,6 @@ def on_ready(s):
     # TODO 以下功能需要破解支付宝
     # TODO 在支付宝才能完成的领饲料任务
     # TODO 在支付宝才能完成的领金币任务
-    # TODO 自动雇佣绵羊打工
     # TODO 自动领取打工金币
     # TODO 自动使用金币兑换支付红包
 
@@ -2017,6 +2041,19 @@ def on_ready(s):
             print('目前没有正在进行的组团抽奖活动！')
 
         print('已经完成组团抽奖活动！', '\n' + '*' * 120)
+        break
+
+    #################################################################################################################################################
+
+    while True:
+        print('雇佣绵羊打工...')
+
+        work_ret = alipay_mobile_aggrbillinfo_sheep_work(s)
+        print('打工开始时间：', datetime.datetime.fromtimestamp(float(work_ret['sheepWorkInfo']['workStartTime']) / 1000),
+            '工作时长：', work_ret['sheepWorkInfo']['workEndSeconds'],
+            '打工结束时间：', datetime.datetime.fromtimestamp(float(work_ret['sheepWorkInfo']['workEndTime']) / 1000))
+
+        print('已经完成雇佣绵羊打工！', '\n' + '*' * 120)
         break
 
     #################################################################################################################################################

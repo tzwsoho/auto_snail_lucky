@@ -29,7 +29,11 @@ request_interval = 0.1 # 每个请求的间隔时间，不要弄太快小心被�
 
 #################################################################################################################################################
 
-device = frida.get_usb_device()
+if len(sys.argv) <= 1:
+    device = frida.get_usb_device()
+else:
+    device = frida.get_device_manager().add_remote_device(sys.argv[1])
+
 pid = 0
 
 # for snail_lucky in device.enumerate_processes():
@@ -166,6 +170,9 @@ def alipay_request(headers, data):
             # 每个请求间隔一段时间，避免封号
             if request_interval > 0:
                 time.sleep(request_interval)
+
+            if len(res.content) == 0:
+                return dict()
 
             ret = res.content.decode('utf-8')
             # print('*' * 120, '\n', ret, '\n' + '*' * 120)
